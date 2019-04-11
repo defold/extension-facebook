@@ -1,8 +1,10 @@
+#if defined(DM_PLATFORM_HTML5)
+
 #include <assert.h>
-#include <extension/extension.h>
-#include <dlib/dstrings.h>
-#include <dlib/log.h>
-#include <dlib/json.h>
+#include <dmsdk/extension/extension.h>
+//#include <dmsdk/dlib/dstrings.h>
+#include <dmsdk/dlib/log.h>
+#include <dmsdk/dlib/json.h>
 #include <script/script.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -65,69 +67,6 @@ extern "C" {
     void dmFacebookDisableEventUsage();
 }
 
-// TODO: Move out to common stuff (also in engine/iap/src/iap_android.cpp and script_json among others)
-static int ToLua(lua_State*L, dmJson::Document* doc, int index)
-{
-    const dmJson::Node& n = doc->m_Nodes[index];
-    const char* json = doc->m_Json;
-    int l = n.m_End - n.m_Start;
-    switch (n.m_Type)
-    {
-    case dmJson::TYPE_PRIMITIVE:
-        if (l == 4 && memcmp(json + n.m_Start, "null", 4) == 0) {
-            lua_pushnil(L);
-        } else if (l == 4 && memcmp(json + n.m_Start, "true", 4) == 0) {
-            lua_pushboolean(L, 1);
-        } else if (l == 5 && memcmp(json + n.m_Start, "false", 5) == 0) {
-            lua_pushboolean(L, 0);
-        } else {
-            double val = atof(json + n.m_Start);
-            lua_pushnumber(L, val);
-        }
-        return index + 1;
-
-    case dmJson::TYPE_STRING:
-        lua_pushlstring(L, json + n.m_Start, l);
-        return index + 1;
-
-    case dmJson::TYPE_ARRAY:
-        lua_createtable(L, n.m_Size, 0);
-        ++index;
-        for (int i = 0; i < n.m_Size; ++i) {
-            index = ToLua(L, doc, index);
-            lua_rawseti(L, -2, i+1);
-        }
-        return index;
-
-    case dmJson::TYPE_OBJECT:
-        lua_createtable(L, 0, n.m_Size);
-        ++index;
-        for (int i = 0; i < n.m_Size; i += 2) {
-            index = ToLua(L, doc, index);
-            index = ToLua(L, doc, index);
-            lua_rawset(L, -3);
-        }
-
-        return index;
-    }
-
-    assert(false && "not reached");
-    return index;
-}
-
-static void PushError(lua_State*L, const char* error)
-{
-    // Could be extended with error codes etc
-    if (error != NULL) {
-        lua_newtable(L);
-        lua_pushstring(L, "error");
-        lua_pushstring(L, error);
-        lua_rawset(L, -3);
-    } else {
-        lua_pushnil(L);
-    }
-}
-
 static void RunStateCallback(lua_State* L, int state, const char *error)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
@@ -151,9 +90,9 @@ static void RunStateCallback(lua_State* L, int state, const char *error)
         }
 
         lua_pushnumber(L, (lua_Number) state);
-        PushError(L, error);
+        dmFacebook::PushError(L, error);
 
-        dmScript::PCall(L, 3, 0);
+        lua_pcall(L, 3, 0, 0);
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
     } else {
@@ -183,9 +122,9 @@ static void RunCallback(lua_State* L, const char *error)
             return;
         }
 
-        PushError(L, error);
+        dmFacebook::PushError(L, error);
 
-        dmScript::PCall(L, 2, 0);
+        lua_pcall(L, 2, 0, 0);
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
     } else {
@@ -217,15 +156,10 @@ static void RunDialogResultCallback(lua_State* L, const char *result_json, const
 
         if(result_json != 0)
         {
-            dmJson::Document doc;
-            dmJson::Result r = dmJson::Parse(result_json, &doc);
-            if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-                ToLua((lua_State *)L, &doc, 0);
-            } else {
-                dmLogError("Failed to parse dialog result JSON (%d)", r);
-                lua_newtable((lua_State *)L);
+            if (dmFacebook::PushLuaTableFromJson(L, result_json)) {
+                dmLogError("Failed to parse dialog result JSON");
+                lua_newtable(L);
             }
-            dmJson::Free(&doc);
         }
         else
         {
@@ -233,9 +167,9 @@ static void RunDialogResultCallback(lua_State* L, const char *result_json, const
             lua_newtable((lua_State *)L);
         }
 
-        PushError(L, error);
+        dmFacebook::PushError(L, error);
 
-        dmScript::PCall(L, 3, 0);
+        lua_pcall(L, 3, 0, 0);
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
     } else {
@@ -310,24 +244,6 @@ int Facebook_Logout(lua_State* L)
     return 0;
 }
 
-// TODO: Move out to common stuff (also in engine/facebook/src/facebook_android.cpp)
-static void AppendArray(lua_State* L, char* buffer, uint32_t buffer_size, int idx)
-{
-    lua_pushnil(L);
-    *buffer = 0;
-    while (lua_next(L, idx) != 0)
-    {
-        if (!lua_isstring(L, -1))
-            luaL_error(L, "permissions can only be strings (not %s)", lua_typename(L, lua_type(L, -1)));
-        if (*buffer != 0)
-            dmStrlCat(buffer, ",", buffer_size);
-        const char* permission = lua_tostring(L, -1);
-        dmStrlCat(buffer, permission, buffer_size);
-        lua_pop(L, 1);
-    }
-}
-
-
 bool PlatformFacebookInitialized()
 {
     return !!g_Facebook.m_appId;
@@ -387,6 +303,22 @@ static void OnRequestReadPermissionsComplete(void* L, const char* error, const c
     RunCallback((lua_State*)L, error);
 }
 
+static void AppendArray(lua_State* L, char* buffer, uint32_t buffer_size, int idx)
+{
+    lua_pushnil(L);
+    *buffer = 0;
+    while (lua_next(L, idx) != 0)
+    {
+        if (!lua_isstring(L, -1))
+            luaL_error(L, "permissions can only be strings (not %s)", lua_typename(L, lua_type(L, -1)));
+        if (*buffer != 0)
+            dmFacebook::StrlCat(buffer, ",", buffer_size);
+        const char* permission = lua_tostring(L, -1);
+        dmFacebook::StrlCat(buffer, permission, buffer_size);
+        lua_pop(L, 1);
+    }
+}
+
 int Facebook_RequestReadPermissions(lua_State* L)
 {
     if( !g_Facebook.m_appId )
@@ -442,7 +374,7 @@ int Facebook_RequestPublishPermissions(lua_State* L)
     g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
 
     char permissions[512] = { 0 };
-    AppendArray(L, permissions, 512, top-2);
+    AppendArray(L, permissions, sizeof(permissions), top-2);
 
     dmFacebookRequestPublishPermissions(permissions, audience, (OnRequestPublishPermissionsCallback) OnRequestPublishPermissionsComplete, dmScript::GetMainThread(L));
 
@@ -490,15 +422,10 @@ int Facebook_Permissions(lua_State* L)
     {
         // Note that the permissionsJsonArray contains a regular string array in json format,
         // e.g. ["foo", "bar", "baz", ...]
-        dmJson::Document doc;
-        dmJson::Result r = dmJson::Parse(g_Facebook.m_PermissionsJson, &doc);
-        if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-            ToLua((lua_State *)L, &doc, 0);
-        } else {
-            dmLogError("Failed to parse Facebook_Permissions response (%d)", r);
-            lua_newtable((lua_State *)L);
+        if (dmFacebook::PushLuaTableFromJson(L, g_Facebook.m_PermissionsJson)) {
+            dmLogError("Failed to parse Facebook_Permissions response");
+            lua_newtable(L);
         }
-        dmJson::Free(&doc);
     }
     else
     {
@@ -522,15 +449,10 @@ int Facebook_Me(lua_State* L)
     if(g_Facebook.m_MeJson != 0)
     {
         // Note: this will pass ALL key/values back to lua, not just string types!
-        dmJson::Document doc;
-        dmJson::Result r = dmJson::Parse(g_Facebook.m_MeJson, &doc);
-        if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-            ToLua(L, &doc, 0);
-        } else {
-            dmLogError("Failed to parse Facebook_Me response (%d)", r);
+        if (dmFacebook::PushLuaTableFromJson(L, g_Facebook.m_MeJson)) {
+            dmLogError("Failed to parse Facebook_Me response");
             lua_pushnil(L);
         }
-        dmJson::Free(&doc);
     }
     else
     {
@@ -613,8 +535,8 @@ int Facebook_PostEvent(lua_State* L)
         dmFacebook::Analytics::GetParameterTable(L, 3, keys, values, &length);
     }
 
-    const char* json_keys = dmJson::CStringArrayToJsonString(keys, length);
-    const char* json_values = dmJson::CStringArrayToJsonString(values, length);
+    const char* json_keys = dmFacebook::CStringArrayToJsonString(keys, length);
+    const char* json_values = dmFacebook::CStringArrayToJsonString(values, length);
 
     // Forward call to JavaScript
     dmFacebookPostEvent(event, valueToSum, json_keys, json_values);
@@ -641,19 +563,33 @@ int Facebook_DisableEventUsage(lua_State* L)
 
 } // namespace
 
-dmExtension::Result InitializeFacebook(dmExtension::Params* params)
+bool Platform_FacebookInitialized()
 {
-    dmFacebook::LuaInit(params->m_L);
+    return g_Facebook.m_Initialized;
+}
 
+dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
+{
+    (void)params;
+    (void)app_id;
+    return dmExtension::RESULT_OK;
+}
+
+dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
+{
+    (void)params;
+    return dmExtension::RESULT_OK;
+}
+
+dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
+{
     if(!g_Facebook.m_Initialized)
     {
-        g_Facebook.m_appId = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0);
+        g_Facebook.m_appId = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0); // Not sure if we need to initialize facebook this late /mawe
         if( g_Facebook.m_appId )
         {
             dmFacebookInitialize(g_Facebook.m_appId, dmFacebook::GRAPH_API_VERSION);
-
             dmLogDebug("FB initialized.");
-
             g_Facebook.m_Initialized = true;
         }
         else
@@ -665,13 +601,23 @@ dmExtension::Result InitializeFacebook(dmExtension::Params* params)
     return dmExtension::RESULT_OK;
 }
 
-dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params)
 {
+    (void)params;
     // TODO: "Uninit" FB SDK here?
-
     g_Facebook = Facebook();
-
     return dmExtension::RESULT_OK;
 }
 
-DM_DECLARE_EXTENSION(FacebookExt, "Facebook", 0, 0, InitializeFacebook, 0, 0, FinalizeFacebook)
+dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
+{
+    (void)params;
+    return dmExtension::RESULT_OK;
+}
+
+void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
+{
+    (void)params; (void)event;
+}
+
+#endif // DM_PLATFORM_HTML5

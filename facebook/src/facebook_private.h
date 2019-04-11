@@ -1,24 +1,10 @@
-#ifndef DM_FACEBOOK_H
-#define DM_FACEBOOK_H
+#pragma once
 
-#define LIB_NAME "facebook"
-
-#include <script/script.h>
+//#include <script/script.h>
 #include "facebook_util.h"
 
-#define DEPRECATED_FACEBOOK_FUNC(CFunc_Name, LuaFunc_name) \
-int Facebook_##CFunc_Name (lua_State* L) { \
-    dmLogOnceWarning("facebook.%s() is deprecated.", #LuaFunc_name); \
-    return 0; \
-}
-
-#define UNAVAILBLE_FACEBOOK_FUNC(CFunc_Name, LuaFunc_name) \
-int Facebook_##CFunc_Name (lua_State* L) { \
-    dmLogOnceWarning("facebook.%s() not available on this platform.", #LuaFunc_name); \
-    return 0; \
-}
-
-void RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status);
+#include <dmsdk/extension/extension.h>
+struct lua_State;
 
 namespace dmFacebook {
 
@@ -105,8 +91,6 @@ namespace dmFacebook {
 
 */
 
-    void LuaInit(lua_State* L);
-
     int Facebook_Login(lua_State* L);
     int Facebook_Logout(lua_State* L);
     int Facebook_AccessToken(lua_State* L);
@@ -119,14 +103,17 @@ namespace dmFacebook {
     int Facebook_DisableEventUsage(lua_State* L);
     int Facebook_ShowDialog(lua_State* L);
 
-    int Facebook_LoginWithPublishPermissions(lua_State* L);
-    int Facebook_LoginWithReadPermissions(lua_State* L);
-
-    bool PlatformFacebookInitialized();
     void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permissions,
         uint32_t permission_count, int callback, int context, lua_State* thread);
     void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** permissions,
         uint32_t permission_count, int audience, int callback, int context, lua_State* thread);
 }
 
-#endif // #ifndef DM_FACEBOOK_H
+
+bool Platform_FacebookInitialized();
+dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id);
+dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params);
+dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params);
+dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params);
+dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params);
+void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event);

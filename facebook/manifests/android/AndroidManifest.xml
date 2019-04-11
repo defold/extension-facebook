@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{{android.package}}">
+	<activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <application>
         <meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{{project.title}}" />
         <activity android:name="com.facebook.FacebookActivity"

@@ -1,9 +1,20 @@
 #ifndef DM_FACEBOOK_UTIL_H
 #define DM_FACEBOOK_UTIL_H
 
-#include <script/script.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+struct lua_State;
 
 namespace dmFacebook {
+
+    /**
+     * Appends src to string dst of size siz (unlike strncat, size is the
+     * full size of dst, not space left).  At most size-1 characters
+     * will be copied.  Always NULL terminates (unless size == 0).
+     * Returns strlen(src); if retval >= siz, truncation occurred.
+     */
+    size_t StrlCat(char* dst, const char* src, size_t size);
 
     /**
      * Check if a Lua table can be considered an array.
@@ -124,9 +135,15 @@ namespace dmFacebook {
     size_t CountStringArrayLength(lua_State* L, int table_index, size_t& entry_count);
 
     void JoinCStringArray(const char** array, uint32_t arrlen, char* buffer, uint32_t buflen, const char* delimiter);
+    const char* CStringArrayToJsonString(const char** array, unsigned int length);
 
     int luaTableToCArray(lua_State* L, int index, char** buffer, uint32_t buffer_size);
 
+    int PushLuaTableFromJson(lua_State* L, const char* json);
+
+    void RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status);
+
+    void PushError(lua_State* L, const char* error);
 }
 
 #endif // #ifndef DM_FACEBOOK_UTIL_H

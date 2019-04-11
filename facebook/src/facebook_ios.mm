@@ -1,5 +1,7 @@
-#include <dlib/log.h>
-#include <script/script.h>
+#if defined(DM_PLATFORM_IOS)
+
+#include <dmsdk/dlib/log.h>
+#include <dmsdk/script/script.h>
 #include <dmsdk/extension/extension.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -276,19 +278,6 @@ static id GetTableValue(lua_State* L, int table_index, NSArray* keys, int expect
     return r;
 }
 
-static void PushError(lua_State*L, NSError* error)
-{
-    // Could be extended with error codes etc
-    if (error != 0) {
-        lua_newtable(L);
-        lua_pushstring(L, "error");
-        lua_pushstring(L, [error.localizedDescription UTF8String]);
-        lua_rawset(L, -3);
-    } else {
-        lua_pushnil(L);
-    }
-}
-
 static void VerifyCallback(lua_State* L)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
@@ -320,9 +309,9 @@ static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* err
         }
 
         lua_pushnumber(L, (lua_Number) status);
-        PushError(L, error);
+        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
 
-        int ret = dmScript::PCall(L, 3, 0);
+        int ret = lua_pcall(L, 3, 0, 0);
         if (ret != 0) {
             dmLogError("Error running facebook callback");
         }
@@ -355,9 +344,9 @@ static void RunCallback(lua_State*L, NSError* error)
             return;
         }
 
-        PushError(L, error);
+        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
 
-        int ret = dmScript::PCall(L, 2, 0);
+        int ret = lua_pcall(L, 2, 0, 0);
         if (ret != 0) {
             dmLogError("Error running facebook callback");
         }
@@ -423,9 +412,9 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
 
         ObjCToLua(L, result);
 
-        PushError(L, error);
+        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
 
-        int ret = dmScript::PCall(L, 3, 0);
+        int ret = lua_pcall(L, 3, 0, 0);
         if (ret != 0) {
             dmLogError("Error running facebook callback");
         }
@@ -1552,15 +1541,13 @@ int Facebook_ShowDialog(lua_State* L)
   * @variable
   */
 
-
-static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
+bool Platform_FacebookInitialized()
 {
-    const char* app_id = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0);
-    if( !app_id )
-    {
-        dmLogDebug("No facebook.appid. Disabling module");
-        return dmExtension::RESULT_OK;
-    }
+    return g_Facebook.m_Login != 0;
+}
+
+dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
+{
     g_Facebook.m_Delegate = [[FacebookAppDelegate alloc] init];
     dmExtension::RegisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
 
@@ -1573,7 +1560,8 @@ static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
+
+dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
 {
     if(!g_Facebook.m_Login)
     {
@@ -1585,15 +1573,27 @@ static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
 {
-    dmFacebook::LuaInit(params->m_L);
+    (void)params;
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 {
+    (void)params;
     return dmExtension::RESULT_OK;
 }
 
-DM_DECLARE_EXTENSION(FacebookExt, "Facebook", AppInitializeFacebook, AppFinalizeFacebook, InitializeFacebook, 0, 0, FinalizeFacebook)
+dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params)
+{
+    (void)params;
+    return dmExtension::RESULT_OK;
+}
+
+void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
+{
+    (void)params; (void)event;
+}
+
+#endif // DM_PLATFORM_IOS

@@ -1,4 +1,4 @@
-package com.dynamo.android.facebook;
+package com.defold.facebook;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,8 +18,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
-
-import com.dynamo.android.DispatcherActivity;
 
 import com.facebook.AccessToken;
 import com.facebook.login.LoginManager;
@@ -102,8 +100,7 @@ public class Facebook implements Handler.Callback {
         }
 
 
-        Intent intent = new Intent(activity, DispatcherActivity.class);
-        intent.putExtra(DispatcherActivity.EXTRA_CLASS_NAME, FacebookActivity.class.getCanonicalName());
+        Intent intent = new Intent(activity, FacebookActivity.class);
         intent.putExtra(INTENT_EXTRA_MESSENGER, messenger);
         intent.putExtra(INTENT_EXTRA_APP_ID, appId);
         if (extras != null) {

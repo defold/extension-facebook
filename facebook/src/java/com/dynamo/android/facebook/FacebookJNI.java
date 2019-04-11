@@ -1,4 +1,4 @@
-package com.dynamo.android.facebook;
+package com.defold.facebook;
 
 import java.net.URLEncoder;
 
@@ -42,7 +42,7 @@ class FacebookAppJNI {
     private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
     private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
     private static final int KEEP_ALIVE = 1;
-  
+
     private static final ThreadFactory sThreadFactory = new ThreadFactory() {
         private final AtomicInteger mCount = new AtomicInteger(1);
         public Thread newThread(Runnable r) {
@@ -50,9 +50,9 @@ class FacebookAppJNI {
         }
     };
     private static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<Runnable>(128);
-  
+
     private static Executor customFacebookExecutor;
-  
+
     private static Executor getCustomExecutor() {
         synchronized (LOCK) {
             if (customFacebookExecutor == null) {

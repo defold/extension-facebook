@@ -1,18 +1,18 @@
-#include <jni.h>
+#if defined(DM_PLATFORM_ANDROID)
 
 #include <assert.h>
 
-#include <extension/extension.h>
-#include <dlib/dstrings.h>
-#include <dlib/log.h>
-#include <dlib/array.h>
-#include <dlib/mutex.h>
-#include <script/script.h>
+#include <dmsdk/sdk.h>
+#include <dmsdk/extension/extension.h>
+#include <dmsdk/dlib/log.h>
+#include <dmsdk/dlib/array.h>
+#include <dmsdk/dlib/mutex.h>
+#include <dmsdk/script/script.h>
 
 #include <pthread.h>
 #include <unistd.h>
 
-#include <android_native_app_glue.h>
+//#include <android_native_app_glue.h>
 
 #include "facebook_private.h"
 #include "facebook_util.h"
@@ -79,18 +79,6 @@ struct Facebook
 
 Facebook g_Facebook;
 
-static void PushError(lua_State*L, const char* error)
-{
-    // Could be extended with error codes etc
-    if (error != NULL) {
-        lua_newtable(L);
-        lua_pushstring(L, "error");
-        lua_pushstring(L, error);
-        lua_rawset(L, -3);
-    } else {
-        lua_pushnil(L);
-    }
-}
 
 static void RunStateCallback(Command* cmd)
 {
@@ -120,45 +108,9 @@ static void RunStateCallback(Command* cmd)
         }
 
         lua_pushnumber(L, (lua_Number) state);
-        PushError(L, error);
+        dmFacebook::PushError(L, error);
 
-        int ret = dmScript::PCall(L, 3, 0);
-        (void)ret;
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
-static void RunCallback(Command* cmd)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        lua_State* L = cmd->m_L;
-        const char* error = cmd->m_Error;
-
-        int top = lua_gettop(L);
-
-        int callback = g_Facebook.m_Callback;
-        g_Facebook.m_Callback = LUA_NOREF;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
-
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        PushError(L, error);
-
-        int ret = dmScript::PCall(L, 2, 0);
+        int ret = lua_pcall(L, 3, 0, 0);
         (void)ret;
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
@@ -210,9 +162,9 @@ static void RunDialogResultCallback(Command* cmd)
             lua_pushnil(L);
         }
 
-        PushError(L, error);
+        dmFacebook::PushError(L, error);
 
-        int ret = dmScript::PCall(L, 3, 0);
+        int ret = lua_pcall(L, 3, 0, 0);
         (void)ret;
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
@@ -251,7 +203,7 @@ static const char* StrDup(JNIEnv* env, jstring s)
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onLogin
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onLogin
   (JNIEnv* env, jobject, jlong userData, jint state, jstring error)
 {
     Command cmd;
@@ -262,7 +214,7 @@ JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onLogin
     QueueCommand(&cmd);
 }
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onLoginWithPermissions
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onLoginWithPermissions
   (JNIEnv* env, jobject, jlong userData, jint state, jstring error)
 {
     Command cmd;
@@ -275,7 +227,7 @@ JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onLoginWithP
     QueueCommand(&cmd);
 }
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onRequestRead
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onRequestRead
   (JNIEnv* env, jobject, jlong userData, jstring error)
 {
     Command cmd;
@@ -285,7 +237,7 @@ JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onRequestRea
     QueueCommand(&cmd);
 }
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onRequestPublish
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onRequestPublish
   (JNIEnv* env, jobject, jlong userData, jstring error)
 {
     Command cmd;
@@ -295,7 +247,7 @@ JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onRequestPub
     QueueCommand(&cmd);
 }
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onDialogComplete
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onDialogComplete
   (JNIEnv *env, jobject, jlong userData, jstring results, jstring error)
 {
     Command cmd;
@@ -306,7 +258,7 @@ JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onDialogComp
     QueueCommand(&cmd);
 }
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onIterateMeEntry
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onIterateMeEntry
   (JNIEnv* env, jobject, jlong user_data, jstring key, jstring value)
 {
     lua_State* L = (lua_State*)user_data;
@@ -328,7 +280,7 @@ JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onIterateMeE
     lua_rawset(L, -3);
 }
 
-JNIEXPORT void JNICALL Java_com_dynamo_android_facebook_FacebookJNI_onIteratePermissionsEntry
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onIteratePermissionsEntry
   (JNIEnv* env, jobject, jlong user_data, jstring permission)
 {
     lua_State* L = (lua_State*)user_data;
@@ -761,16 +713,77 @@ int Facebook_ShowDialog(lua_State* L)
 
 } // namespace
 
-static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
+bool Platform_FacebookInitialized()
 {
-    dmFacebook::LuaInit(params->m_L);
+    return g_Facebook.m_FBApp != 0 && g_Facebook.m_FB != 0;
+}
 
+dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
+{
+    if (!g_Facebook.m_FBApp)
+    {
+        JNIEnv* env = Attach();
+
+        jclass activity_class = env->FindClass("android/app/NativeActivity");
+        jmethodID get_class_loader = env->GetMethodID(activity_class,"getClassLoader", "()Ljava/lang/ClassLoader;");
+        jobject cls = env->CallObjectMethod(g_AndroidApp->activity->clazz, get_class_loader);
+        jclass class_loader = env->FindClass("java/lang/ClassLoader");
+        jmethodID find_class = env->GetMethodID(class_loader, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+        jstring str_class_name = env->NewStringUTF("com.dynamo.android.facebook.FacebookAppJNI");
+        jclass fb_class = (jclass)env->CallObjectMethod(cls, find_class, str_class_name);
+        env->DeleteLocalRef(str_class_name);
+
+        g_Facebook.m_Activate = env->GetMethodID(fb_class, "activate", "()V");
+        g_Facebook.m_Deactivate = env->GetMethodID(fb_class, "deactivate", "()V");
+        g_Facebook.m_DisableFaceBookEvents = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.disable_events", 0);
+
+        jmethodID jni_constructor = env->GetMethodID(fb_class, "<init>", "(Landroid/app/Activity;Ljava/lang/String;)V");
+        jstring str_app_id = env->NewStringUTF(app_id);
+        g_Facebook.m_FBApp = env->NewGlobalRef(env->NewObject(fb_class, jni_constructor, g_AndroidApp->activity->clazz, str_app_id));
+        env->DeleteLocalRef(str_app_id);
+
+        if(!g_Facebook.m_DisableFaceBookEvents)
+        {
+            env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Activate);
+        }
+
+        return Detach(env) ? dmExtension::RESULT_OK : dmExtension::RESULT_INIT_ERROR;
+    }
+
+    return dmExtension::RESULT_OK;
+}
+
+dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
+{
+    bool javaStatus = false;
+    if (g_Facebook.m_FBApp != 0)
+    {
+        JNIEnv* env = Attach();
+        if(!g_Facebook.m_DisableFaceBookEvents)
+        {
+            env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Deactivate);
+        }
+        env->DeleteGlobalRef(g_Facebook.m_FBApp);
+
+        javaStatus = !Detach(env);
+
+        g_Facebook.m_FBApp = 0;
+        memset(&g_Facebook, 0x00, sizeof(Facebook));
+    }
+
+    // javaStatus should really be checked and an error returned if something is wrong.
+    (void)javaStatus;
+    return dmExtension::RESULT_OK;
+}
+
+dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
+{
     if( !g_Facebook.m_FBApp )
     {
         return dmExtension::RESULT_OK;
     }
 
-    if (g_Facebook.m_FB == NULL)
+    if (!g_Facebook.m_FB)
     {
         g_Facebook.m_Mutex = dmMutex::New();
         g_Facebook.m_CmdQueue.SetCapacity(8);
@@ -821,7 +834,7 @@ static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result UpdateFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 {
     if( !g_Facebook.m_FBApp )
     {
@@ -830,7 +843,7 @@ static dmExtension::Result UpdateFacebook(dmExtension::Params* params)
 
     {
         dmMutex::ScopedLock lk(g_Facebook.m_Mutex);
-        for (uint32_t i=0;i!=g_Facebook.m_CmdQueue.Size();i++)
+        for (uint32_t i = 0; i != g_Facebook.m_CmdQueue.Size(); i++)
         {
             Command& cmd = g_Facebook.m_CmdQueue[i];
             if (cmd.m_L != params->m_L)
@@ -843,10 +856,11 @@ static dmExtension::Result UpdateFacebook(dmExtension::Params* params)
                     break;
                 case CMD_REQUEST_READ:
                 case CMD_REQUEST_PUBLISH:
-                    RunCallback(&cmd);
+                    //RunCallback(&cmd);
+                    dmFacebook::RunCallback(cmd.m_L, &g_Facebook.m_Self, &g_Facebook.m_Callback, cmd.m_Error, cmd.m_State);
                     break;
                 case CMD_LOGIN_WITH_PERMISSIONS:
-                    RunCallback(cmd.m_L, &g_Facebook.m_Self, &g_Facebook.m_Callback, cmd.m_Error, cmd.m_State);
+                    dmFacebook::RunCallback(cmd.m_L, &g_Facebook.m_Self, &g_Facebook.m_Callback, cmd.m_Error, cmd.m_State);
                     break;
                 case CMD_DIALOG_COMPLETE:
                     RunDialogResultCallback(&cmd);
@@ -869,7 +883,7 @@ static dmExtension::Result UpdateFacebook(dmExtension::Params* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params)
 {
     if (g_Facebook.m_FB != NULL)
     {
@@ -891,71 +905,7 @@ static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
-{
-    const char* app_id = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0);
-    if( !app_id )
-    {
-        dmLogDebug("No facebook.appid. Disabling module");
-        return dmExtension::RESULT_OK;
-    }
-    if( g_Facebook.m_FBApp == NULL )
-    {
-        JNIEnv* env = Attach();
-
-        jclass activity_class = env->FindClass("android/app/NativeActivity");
-        jmethodID get_class_loader = env->GetMethodID(activity_class,"getClassLoader", "()Ljava/lang/ClassLoader;");
-        jobject cls = env->CallObjectMethod(g_AndroidApp->activity->clazz, get_class_loader);
-        jclass class_loader = env->FindClass("java/lang/ClassLoader");
-        jmethodID find_class = env->GetMethodID(class_loader, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
-        jstring str_class_name = env->NewStringUTF("com.dynamo.android.facebook.FacebookAppJNI");
-        jclass fb_class = (jclass)env->CallObjectMethod(cls, find_class, str_class_name);
-        env->DeleteLocalRef(str_class_name);
-
-        g_Facebook.m_Activate = env->GetMethodID(fb_class, "activate", "()V");
-        g_Facebook.m_Deactivate = env->GetMethodID(fb_class, "deactivate", "()V");
-        g_Facebook.m_DisableFaceBookEvents = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.disable_events", 0);
-
-        jmethodID jni_constructor = env->GetMethodID(fb_class, "<init>", "(Landroid/app/Activity;Ljava/lang/String;)V");
-        jstring str_app_id = env->NewStringUTF(app_id);
-        g_Facebook.m_FBApp = env->NewGlobalRef(env->NewObject(fb_class, jni_constructor, g_AndroidApp->activity->clazz, str_app_id));
-        env->DeleteLocalRef(str_app_id);
-
-        if(!g_Facebook.m_DisableFaceBookEvents)
-        {
-            env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Activate);
-        }
-
-        return Detach(env) ? dmExtension::RESULT_OK : dmExtension::RESULT_INIT_ERROR;
-    }
-
-    return dmExtension::RESULT_OK;
-}
-
-static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
-{
-    bool javaStatus = false;
-    if (g_Facebook.m_FBApp != NULL)
-    {
-        JNIEnv* env = Attach();
-        if(!g_Facebook.m_DisableFaceBookEvents)
-        {
-            env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Deactivate);
-        }
-        env->DeleteGlobalRef(g_Facebook.m_FBApp);
-
-        javaStatus = !Detach(env);
-
-        g_Facebook.m_FBApp = NULL;
-        memset(&g_Facebook, 0x00, sizeof(Facebook));
-    }
-
-    // javaStatus should really be checked and an error returned if something is wrong.
-    (void)javaStatus;
-    return dmExtension::RESULT_OK;
-}
-
-static void OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
+void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
 {
     if( (g_Facebook.m_FBApp) && (!g_Facebook.m_DisableFaceBookEvents ) )
     {
@@ -973,5 +923,4 @@ static void OnEventFacebook(dmExtension::Params* params, const dmExtension::Even
     }
 }
 
-
-DM_DECLARE_EXTENSION(FacebookExt, "Facebook", AppInitializeFacebook, AppFinalizeFacebook, InitializeFacebook, UpdateFacebook, OnEventFacebook, FinalizeFacebook)
+#endif // DM_PLATFORM_ANDROID
