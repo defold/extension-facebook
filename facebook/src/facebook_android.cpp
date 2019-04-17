@@ -617,7 +617,7 @@ int Facebook_PostEvent(lua_State* L)
         env->SetObjectArrayElement(jValues, i, jValue);
     }
 
-    // Call com.dynamo.android.facebook.FacebookJNI.postEvent
+    // Call com.defold.facebook.FacebookJNI.postEvent
     env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_PostEvent, jEvent, jValueToSum, jKeys, jValues);
 
     if (!Detach(env))
@@ -729,7 +729,7 @@ dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* param
         jobject cls = env->CallObjectMethod(g_AndroidApp->activity->clazz, get_class_loader);
         jclass class_loader = env->FindClass("java/lang/ClassLoader");
         jmethodID find_class = env->GetMethodID(class_loader, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
-        jstring str_class_name = env->NewStringUTF("com.dynamo.android.facebook.FacebookAppJNI");
+        jstring str_class_name = env->NewStringUTF("com.defold.facebook.FacebookAppJNI");
         jclass fb_class = (jclass)env->CallObjectMethod(cls, find_class, str_class_name);
         env->DeleteLocalRef(str_class_name);
 
@@ -795,7 +795,7 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
         jobject cls = env->CallObjectMethod(g_AndroidApp->activity->clazz, get_class_loader);
         jclass class_loader = env->FindClass("java/lang/ClassLoader");
         jmethodID find_class = env->GetMethodID(class_loader, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
-        jstring str_class_name = env->NewStringUTF("com.dynamo.android.facebook.FacebookJNI");
+        jstring str_class_name = env->NewStringUTF("com.defold.facebook.FacebookJNI");
         jclass fb_class = (jclass)env->CallObjectMethod(cls, find_class, str_class_name);
         env->DeleteLocalRef(str_class_name);
 
