@@ -47,12 +47,16 @@ Here we describe how to do that.
 
 * Make sure you have the script `misc/facebook_server.py` available locally
 
-* A `key.pem` and `cert.pem` are required for the next step.
+* A `key.pem` and `cert.pem` are required for the next step. You can either run [create_cert.sh](./facebook/misc/create_cert.sh) or run:
+
+		openssl req -x509 -newkey rsa:2048 -days 30 -subj "/CN=Test Team" -nodes -keyout "key.pem" -out "cert.pem" >
+		/dev/null 2>&1
+
 
 * Launch the http server:
 
-		$ python facebook_server 8000
+		$ python ~/facebook_server.py 8000
 
 ## Test the app
 
-* Go to your app page: https://apps.facebook.com/&lt;APP_ID&gt;
+* Go to your app page: https://apps.facebook.com/<APP_ID>

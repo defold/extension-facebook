@@ -3,8 +3,6 @@
 import string, cgi, time, os, ssl, sys
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
-PORT_NUMBER = int(sys.argv[1])
-
 class MyRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -57,11 +55,18 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         self.do_GET()
 
 
-def main():
+def main(port, cert=None, key=None):
     try:
-        server = HTTPServer(("", PORT_NUMBER), MyRequestHandler)
-        server.socket = ssl.wrap_socket(server.socket, certfile="cert.pem", keyfile="key.pem", server_side = True)
-        print "starting httpserver on port " , PORT_NUMBER , "\nPress ^C to quit."
+        server = HTTPServer(("", port), MyRequestHandler)
+        is_https = False
+        if cert is not None and key is not None:
+            if os.path.exists(cert) and os.path.exists(key):
+                server.socket = ssl.wrap_socket(server.socket, certfile=cert, keyfile=key, server_side = True)
+                is_https = True
+        else:
+            print "Couldn't find cert.pem and/or key.pem, falling back to http://"
+        print "Server started at " + ("https" if is_https else "http") + "://localhost:%d" % port
+        print "Press ^C to quit."
         server.serve_forever()
     except KeyboardInterrupt:
         print " received, shutting down server"
@@ -69,4 +74,16 @@ def main():
     server.socket.close()
 
 if __name__ == "__main__":
-    main()
+    port = 8000
+    if len(sys.argv) >= 2:
+        port = int(sys.argv[1])
+
+    cert = "cert.pem"
+    if len(sys.argv) >= 3:
+        cert = sys.argv[2]
+
+    key = "key.pem"
+    if len(sys.argv) >= 4:
+        key = sys.argv[3]
+
+    main(port, cert, key)
