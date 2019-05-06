@@ -325,41 +325,6 @@ static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* err
     }
 }
 
-static void RunCallback(lua_State*L, NSError* error)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
-
-        int ret = lua_pcall(L, 2, 0, 0);
-        if (ret != 0) {
-            dmLogError("Error running facebook callback");
-        }
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        g_Facebook.m_Callback = LUA_NOREF;
-        g_Facebook.m_Self = LUA_NOREF;
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
 static void ObjCToLua(lua_State*L, id obj)
 {
     if ([obj isKindOfClass:[NSString class]]) {
