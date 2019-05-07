@@ -106,7 +106,7 @@ static const luaL_reg Facebook_methods[] =
     {0, 0}
 };
 
-void LuaInit(lua_State* L)
+static void LuaInit(lua_State* L)
 {
     int top = lua_gettop(L);
     luaL_register(L, MODULE_NAME, Facebook_methods);
@@ -194,6 +194,6 @@ static void OnEventFacebook(dmExtension::Params* params, const dmExtension::Even
     Platform_OnEventFacebook(params, event);
 }
 
-DM_DECLARE_EXTENSION(FacebookExt, "Facebook", AppInitializeFacebook, AppFinalizeFacebook, InitializeFacebook, UpdateFacebook, OnEventFacebook, FinalizeFacebook)
+DM_DECLARE_EXTENSION(FacebookExtExternal, "Facebook", AppInitializeFacebook, AppFinalizeFacebook, InitializeFacebook, UpdateFacebook, OnEventFacebook, FinalizeFacebook)
 
 #endif
