@@ -449,7 +449,6 @@ public class FacebookActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        System.out.println("MAWE: hello");
         Intent intent = this.getIntent();
         Bundle extras = intent.getExtras();
 
@@ -457,7 +456,7 @@ public class FacebookActivity extends Activity {
 
         final String action = intent.getAction();
         this.messenger = (Messenger) extras.getParcelable(Facebook.INTENT_EXTRA_MESSENGER);
-System.out.println("MAWE: hello 2");
+
         // Prepare a response to send in case we finish without having sent anything
         // (activity shut down etc). This is cleared by respond()
         Bundle abortedData = new Bundle();
@@ -465,7 +464,6 @@ System.out.println("MAWE: hello 2");
         abortedData.putString(Facebook.MSG_KEY_ERROR, "Aborted");
         onAbortedMessage = new Message();
         onAbortedMessage.setData(abortedData);
-System.out.println("MAWE: hello 3");
 
         try {
             if (action.equals(Facebook.ACTION_LOGIN)) {
@@ -484,7 +482,6 @@ System.out.println("MAWE: hello 3");
             data.putString(Facebook.MSG_KEY_ERROR, e.getMessage());
             respond(action, data);
         }
-        System.out.println("MAWE: hello finish");
     }
 
     @Override
