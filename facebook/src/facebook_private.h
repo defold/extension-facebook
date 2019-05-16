@@ -1,6 +1,5 @@
 #pragma once
 
-//#include <script/script.h>
 #include "facebook_util.h"
 
 #include <dmsdk/extension/extension.h>

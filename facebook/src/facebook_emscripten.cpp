@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <dmsdk/extension/extension.h>
-//#include <dmsdk/dlib/dstrings.h>
 #include <dmsdk/dlib/log.h>
 #include <dmsdk/dlib/json.h>
 #include <script/script.h>

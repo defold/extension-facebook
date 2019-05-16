@@ -152,11 +152,6 @@ static void LuaInit(lua_State* L)
 
 } // namespace
 
-
-    dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params);
-    dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params);
-
-
 static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
 {
     const char* app_id = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0);

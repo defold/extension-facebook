@@ -12,8 +12,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-//#include <android_native_app_glue.h>
-
 #include "facebook_private.h"
 #include "facebook_util.h"
 #include "facebook_analytics.h"

@@ -5,13 +5,7 @@ platforms:
         bundle:
             aaptExtraPackages: ['com.facebook']
 
-    armv7-ios:
+    ios:
         context:
             frameworks: ['Security']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-
-    arm64-ios:
-        context:
-            frameworks: ['Security']
-            weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-
