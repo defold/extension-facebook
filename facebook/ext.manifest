@@ -1,0 +1,11 @@
+name: FacebookExtExternal
+
+platforms:
+    android:
+        bundle:
+            aaptExtraPackages: ['com.facebook']
+
+    ios:
+        context:
+            frameworks: ['Security']
+            weakFrameworks: ['Accounts', 'Social', 'AdSupport']

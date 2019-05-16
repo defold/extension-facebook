@@ -1,4 +1,4 @@
-package com.dynamo.android.facebook;
+package com.defold.facebook;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +14,6 @@ import android.util.Log;
 import android.net.Uri;
 
 import android.support.v4.app.FragmentActivity;
-import com.dynamo.android.DispatcherActivity.PseudoActivity;
 import android.content.Context;
 
 import com.facebook.FacebookSdk;
@@ -38,11 +37,10 @@ import com.facebook.HttpMethod;
 
 import org.json.JSONObject;
 
-public class FacebookActivity implements PseudoActivity {
+public class FacebookActivity extends Activity {
     private static final String TAG = "defold.facebook";
 
     private Messenger messenger;
-    private Activity parent;
     private CallbackManager callbackManager;
     private Message onAbortedMessage;
 
@@ -127,7 +125,8 @@ public class FacebookActivity implements PseudoActivity {
 
     private void respond(final String action, final Bundle data) {
         onAbortedMessage = null; // only kept for when respond() never happens.
-        this.parent.runOnUiThread(new Runnable() {
+        final Activity activity = this;
+        this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 data.putString(Facebook.MSG_KEY_ACTION, action);
@@ -138,7 +137,7 @@ public class FacebookActivity implements PseudoActivity {
                 } catch (RemoteException e) {
                     Log.wtf(TAG, e);
                 }
-                parent.finish();
+                activity.finish();
             }
         });
     }
@@ -207,7 +206,7 @@ public class FacebookActivity implements PseudoActivity {
 
             });
 
-            LoginManager.getInstance().logInWithReadPermissions(parent, Arrays.asList("public_profile", "email", "user_friends"));
+            LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList("public_profile", "email", "user_friends"));
         }
 
     }
@@ -247,9 +246,9 @@ public class FacebookActivity implements PseudoActivity {
         if (action.equals(Facebook.ACTION_LOGIN_WITH_PUBLISH_PERMISSIONS)) {
             int audience = extras.getInt(Facebook.INTENT_EXTRA_AUDIENCE);
             LoginManager.getInstance().setDefaultAudience(convertDefaultAudience(audience));
-            LoginManager.getInstance().logInWithPublishPermissions(parent, Arrays.asList(permissions));
+            LoginManager.getInstance().logInWithPublishPermissions(this, Arrays.asList(permissions));
         } else if (action.equals(Facebook.ACTION_LOGIN_WITH_READ_PERMISSIONS)) {
-            LoginManager.getInstance().logInWithReadPermissions(parent, Arrays.asList(permissions));
+            LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList(permissions));
         }
     }
 
@@ -284,11 +283,11 @@ public class FacebookActivity implements PseudoActivity {
         });
 
         if (action.equals(Facebook.ACTION_REQ_READ_PERMS)) {
-            LoginManager.getInstance().logInWithReadPermissions(parent, Arrays.asList(permissions));
+            LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList(permissions));
         } else {
             int defaultAudienceInt = extras.getInt(Facebook.INTENT_EXTRA_AUDIENCE);
             LoginManager.getInstance().setDefaultAudience(convertDefaultAudience(defaultAudienceInt));
-            LoginManager.getInstance().logInWithPublishPermissions(parent, Arrays.asList(permissions));
+            LoginManager.getInstance().logInWithPublishPermissions(this, Arrays.asList(permissions));
         }
     }
 
@@ -299,7 +298,7 @@ public class FacebookActivity implements PseudoActivity {
 
         if (dialogType.equals("appinvite")) {
 
-            AppInviteDialog appInviteDialog = new AppInviteDialog(parent);
+            AppInviteDialog appInviteDialog = new AppInviteDialog(this);
             AppInviteContent content = new AppInviteContent.Builder()
                 .setApplinkUrl(dialogParams.getString("url", ""))
                 .setPreviewImageUrl(dialogParams.getString("preview_image_url", ""))
@@ -319,7 +318,7 @@ public class FacebookActivity implements PseudoActivity {
 
             // canShow false when browser/app not available.
             if (appInviteDialog.canShow()) {
-                appInviteDialog.show(parent, content);
+                appInviteDialog.show(this, content);
             } else {
                 Bundle data = new Bundle();
                 data.putString(Facebook.MSG_KEY_ERROR, "Dialog not available");
@@ -339,7 +338,7 @@ public class FacebookActivity implements PseudoActivity {
 
                 if (dialogType.equals("feed")) {
 
-                    ShareDialog shareDialog = new ShareDialog(parent);
+                    ShareDialog shareDialog = new ShareDialog(this);
                     ShareLinkContent.Builder content = new ShareLinkContent.Builder()
                         .setContentUrl(Uri.parse(dialogParams.getString("link", "")))
                         .setContentTitle(dialogParams.getString("caption", ""))
@@ -367,11 +366,11 @@ public class FacebookActivity implements PseudoActivity {
 
                     });
 
-                    shareDialog.show(parent, content.build());
+                    shareDialog.show(this, content.build());
 
                 } else if (dialogType.equals("apprequests") || dialogType.equals("apprequest")) {
 
-                    GameRequestDialog appInviteDialog = new GameRequestDialog(parent);
+                    GameRequestDialog appInviteDialog = new GameRequestDialog(this);
 
                     ArrayList<String> suggestionsArray = new ArrayList<String>();
                     String suggestionsString = dialogParams.getString("suggestions", null);
@@ -435,7 +434,7 @@ public class FacebookActivity implements PseudoActivity {
 
                     });
 
-                    appInviteDialog.show(parent, content.build());
+                    appInviteDialog.show(this, content.build());
 
                 } else {
                     Bundle data = new Bundle();
@@ -448,9 +447,9 @@ public class FacebookActivity implements PseudoActivity {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState, Activity parent) {
-        this.parent = parent;
-        Intent intent = parent.getIntent();
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Intent intent = this.getIntent();
         Bundle extras = intent.getExtras();
 
         callbackManager = CallbackManager.Factory.create();
@@ -485,7 +484,9 @@ public class FacebookActivity implements PseudoActivity {
         }
     }
 
-    @Override public void onDestroy() {
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
         if (onAbortedMessage != null) {
             try {
                 messenger.send(onAbortedMessage);
@@ -496,6 +497,7 @@ public class FacebookActivity implements PseudoActivity {
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         callbackManager.onActivityResult(requestCode, resultCode, data);
     }
 

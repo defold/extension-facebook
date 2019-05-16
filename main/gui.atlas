@@ -1,0 +1,18 @@
+images {
+  image: "/main/images/logo.png"
+}
+images {
+  image: "/main/images/white-disc.png"
+}
+images {
+  image: "/main/images/white-ring.png"
+}
+images {
+  image: "/main/images/background.png"
+}
+images {
+  image: "/main/images/white-logo.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

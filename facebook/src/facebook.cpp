@@ -1,79 +1,17 @@
+#if defined(DM_PLATFORM_ANDROID) || defined(DM_PLATFORM_IOS) || defined(DM_PLATFORM_HTML5)
 
 #include "facebook_private.h"
 #include "facebook_analytics.h"
-#include <dlib/log.h>
-#include <dlib/dstrings.h>
+#include <dmsdk/sdk.h>
+#include <dmsdk/dlib/log.h>
 
-void RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status)
-{
-    if (*_callback != LUA_NOREF)
-    {
-        DM_LUA_STACK_CHECK(L, 0);
-
-        lua_rawgeti(L, LUA_REGISTRYINDEX, *_callback);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, *_self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (dmScript::IsInstanceValid(L))
-        {
-            lua_newtable(L);
-
-            if (error != NULL) {
-                lua_pushstring(L, "error");
-                lua_pushstring(L, error);
-                lua_rawset(L, -3);
-            }
-
-            lua_pushstring(L, "status");
-            lua_pushnumber(L, status);
-            lua_rawset(L, -3);
-
-            if (dmScript::PCall(L, 2, 0) != 0)
-            {
-                dmLogError("Error running facebook callback");
-            }
-
-            dmScript::Unref(L, LUA_REGISTRYINDEX, *_callback);
-            dmScript::Unref(L, LUA_REGISTRYINDEX, *_self);
-            *_callback = LUA_NOREF;
-            *_self = LUA_NOREF;
-        }
-        else
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-        }
-    }
-    else
-    {
-        dmLogError("No callback set for facebook");
-    }
-}
+#define MODULE_NAME "facebook"  // the c++ module name from ext.manifest, also used as the Lua module name
 
 namespace dmFacebook {
 
-static const luaL_reg Facebook_methods[] =
+static int Facebook_LoginWithPublishPermissions(lua_State* L)
 {
-    {"login", Facebook_Login},
-    {"logout", Facebook_Logout},
-    {"access_token", Facebook_AccessToken},
-    {"permissions", Facebook_Permissions},
-    {"request_read_permissions", Facebook_RequestReadPermissions},
-    {"request_publish_permissions", Facebook_RequestPublishPermissions},
-    {"me", Facebook_Me},
-    {"post_event", Facebook_PostEvent},
-    {"enable_event_usage", Facebook_EnableEventUsage},
-    {"disable_event_usage", Facebook_DisableEventUsage},
-    {"show_dialog", Facebook_ShowDialog},
-    {"login_with_read_permissions", Facebook_LoginWithReadPermissions},
-    {"login_with_publish_permissions", Facebook_LoginWithPublishPermissions},
-    {0, 0}
-};
-
-int Facebook_LoginWithPublishPermissions(lua_State* L)
-{
-    if (!PlatformFacebookInitialized())
+    if (!Platform_FacebookInitialized())
     {
         return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
     }
@@ -112,9 +50,9 @@ int Facebook_LoginWithPublishPermissions(lua_State* L)
     return 0;
 }
 
-int Facebook_LoginWithReadPermissions(lua_State* L)
+static int Facebook_LoginWithReadPermissions(lua_State* L)
 {
-    if (!PlatformFacebookInitialized())
+    if (!Platform_FacebookInitialized())
     {
         return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
     }
@@ -150,10 +88,28 @@ int Facebook_LoginWithReadPermissions(lua_State* L)
     return 0;
 }
 
-void LuaInit(lua_State* L)
+static const luaL_reg Facebook_methods[] =
+{
+    {"login", Facebook_Login},
+    {"logout", Facebook_Logout},
+    {"access_token", Facebook_AccessToken},
+    {"permissions", Facebook_Permissions},
+    {"request_read_permissions", Facebook_RequestReadPermissions},
+    {"request_publish_permissions", Facebook_RequestPublishPermissions},
+    {"me", Facebook_Me},
+    {"post_event", Facebook_PostEvent},
+    {"enable_event_usage", Facebook_EnableEventUsage},
+    {"disable_event_usage", Facebook_DisableEventUsage},
+    {"show_dialog", Facebook_ShowDialog},
+    {"login_with_read_permissions", Facebook_LoginWithReadPermissions},
+    {"login_with_publish_permissions", Facebook_LoginWithPublishPermissions},
+    {0, 0}
+};
+
+static void LuaInit(lua_State* L)
 {
     int top = lua_gettop(L);
-    luaL_register(L, LIB_NAME, Facebook_methods);
+    luaL_register(L, MODULE_NAME, Facebook_methods);
 
     #define SETCONSTANT(name, val) \
         lua_pushnumber(L, (lua_Number) val); \
@@ -183,13 +139,56 @@ void LuaInit(lua_State* L)
 
 #undef SETCONSTANT
 
+#if defined(DM_PLATFORM_HTML5)
     lua_pushstring(L, dmFacebook::GRAPH_API_VERSION);
     lua_setfield(L, -2, "GRAPH_API_VERSION");
+#endif
 
-    dmFacebook::Analytics::RegisterConstants(L);
+    dmFacebook::Analytics::RegisterConstants(L, MODULE_NAME);
 
     lua_pop(L, 1);
     assert(top == lua_gettop(L));
 }
 
 } // namespace
+
+static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
+{
+    const char* app_id = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0);
+    if( !app_id )
+    {
+        dmLogDebug("No facebook.appid. Disabling module");
+        return dmExtension::RESULT_OK;
+    }
+    return Platform_AppInitializeFacebook(params, app_id);
+}
+
+static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
+{
+    return Platform_AppFinalizeFacebook(params);
+}
+
+static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
+{
+    dmFacebook::LuaInit(params->m_L);
+    return Platform_InitializeFacebook(params);
+}
+
+static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
+{
+    return Platform_FinalizeFacebook(params);
+}
+
+static dmExtension::Result UpdateFacebook(dmExtension::Params* params)
+{
+    return Platform_UpdateFacebook(params);
+}
+
+static void OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
+{
+    Platform_OnEventFacebook(params, event);
+}
+
+DM_DECLARE_EXTENSION(FacebookExtExternal, "Facebook", AppInitializeFacebook, AppFinalizeFacebook, InitializeFacebook, UpdateFacebook, OnEventFacebook, FinalizeFacebook)
+
+#endif

@@ -127,7 +127,7 @@ namespace dmFacebook {
          *
          * \param L The Lua stack.
          */
-        void RegisterConstants(lua_State* L);
+        void RegisterConstants(lua_State* L, const char* modulename);
 
     };
 

@@ -1,5 +1,7 @@
-#include <dlib/log.h>
-#include <script/script.h>
+#if defined(DM_PLATFORM_IOS)
+
+#include <dmsdk/dlib/log.h>
+#include <dmsdk/script/script.h>
 #include <dmsdk/extension/extension.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -276,19 +278,6 @@ static id GetTableValue(lua_State* L, int table_index, NSArray* keys, int expect
     return r;
 }
 
-static void PushError(lua_State*L, NSError* error)
-{
-    // Could be extended with error codes etc
-    if (error != 0) {
-        lua_newtable(L);
-        lua_pushstring(L, "error");
-        lua_pushstring(L, [error.localizedDescription UTF8String]);
-        lua_rawset(L, -3);
-    } else {
-        lua_pushnil(L);
-    }
-}
-
 static void VerifyCallback(lua_State* L)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
@@ -320,44 +309,9 @@ static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* err
         }
 
         lua_pushnumber(L, (lua_Number) status);
-        PushError(L, error);
+        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
 
-        int ret = dmScript::PCall(L, 3, 0);
-        if (ret != 0) {
-            dmLogError("Error running facebook callback");
-        }
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        g_Facebook.m_Callback = LUA_NOREF;
-        g_Facebook.m_Self = LUA_NOREF;
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
-static void RunCallback(lua_State*L, NSError* error)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        PushError(L, error);
-
-        int ret = dmScript::PCall(L, 2, 0);
+        int ret = lua_pcall(L, 3, 0, 0);
         if (ret != 0) {
             dmLogError("Error running facebook callback");
         }
@@ -423,9 +377,9 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
 
         ObjCToLua(L, result);
 
-        PushError(L, error);
+        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
 
-        int ret = dmScript::PCall(L, 3, 0);
+        int ret = lua_pcall(L, 3, 0, 0);
         if (ret != 0) {
             dmLogError("Error running facebook callback");
         }
@@ -564,63 +518,11 @@ static void PrepareCallback(lua_State* thread, FBSDKLoginManagerLoginResult* res
 
 namespace dmFacebook {
 
-/*# Facebook API documentation
- *
- * Functions and constants for interacting with Facebook APIs.
- *
- * @document
- * @name Facebook
- * @namespace facebook
- */
-
 bool PlatformFacebookInitialized()
 {
     return !!g_Facebook.m_Login;
 }
 
-/*# Login to Facebook and request a set of read permissions
- *
- * Login to Facebook and request a set of read permissions. The user is
- * prompted to authorize the application using the login dialog of the specific
- * platform. Even if the user is already logged in to Facebook this function
- * can still be used to request additional read permissions.
- *
- * [icon:attention] Note that this function cannot be used to request publish permissions.
- * If the application requires both read and publish permissions, individual
- * calls to both [ref:login_with_publish_permissions]
- * and [ref:login_with_read_permissions] has to be made.
- *
- * A comprehensive list of permissions can be found in the <a href="https://developers.facebook.com/docs/facebook-login/permissions">Facebook documentation</a>,
- * as well as a <a href="https://developers.facebook.com/docs/facebook-login/best-practices">guide to best practises for login management</a>.
- *
- * @name facebook.login_with_read_permissions
- * @replaces facebook.login facebook.request_read_permissions
- * @param permissions [type:table] Table with the requested read permission strings.
- * @param callback [type:function(self, data)] callback function that is executed when the permission request dialog is closed.
- *
- * `self`
- * : [type:object] The context of the calling script
- *
- * `data`
- * : [type:table] A table that contains the response
- *
- * @examples
- *
- * Log in to Facebook with a set of read permissions:
- *
- * ```lua
- * local permissions = {"public_profile", "email", "user_friends"}
- * facebook.login_with_read_permissions(permissions, function(self, data)
- *     if (data.status == facebook.STATE_OPEN and data.error == nil) then
- *         print("Successfully logged into Facebook")
- *         pprint(facebook.permissions())
- *     else
- *         print("Failed to get permissions (" .. data.status .. ")")
- *         pprint(data)
- *     end
- * end)
- * ```
- */
 void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int callback, int context, lua_State* thread)
 {
@@ -648,56 +550,6 @@ void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permiss
     }
 }
 
-/*# Login to Facebook and request a set of publish permissions
- *
- * Login to Facebook and request a set of publish permissions. The user is
- * prompted to authorize the application using the login dialog of the specific
- * platform. Even if the user is already logged in to Facebook this function
- * can still be used to request additional publish permissions.
- *
- * [icon:attention] Note that this function cannot be used to request read permissions.
- * If the application requires both publish and read permissions, individual
- * calls to both [ref:login_with_publish_permissions]
- * and [ref:login_with_read_permissions] has to be made.
- *
- * A comprehensive list of permissions can be found in the <a href="https://developers.facebook.com/docs/facebook-login/permissions">Facebook documentation</a>,
- * as well as a <a href="https://developers.facebook.com/docs/facebook-login/best-practices">guide to best practises for login management</a>.
- *
- * @name facebook.login_with_publish_permissions
- * @replaces facebook.login facebook.request_publish_permissions
- * @param permissions [type:table] Table with the requested publish permission strings.
- * @param audience [type:constant|number] The audience that should be able to see the publications.
- *
- * - `facebook.AUDIENCE_NONE`
- * - `facebook.AUDIENCE_ONLYME`
- * - `facebook.AUDIENCE_FRIENDS`
- * - `facebook.AUDIENCE_EVERYONE`
- *
- * @param callback [type:function(self, data)] Callback function that is executed when the permission request dialog is closed.
- *
- * `self`
- * : [type:object] The context of the calling script
- *
- * `data`
- * : [type:table] A table that contains the response
- *
- * @examples
- *
- * Log in to Facebook with a set of publish permissions:
- *
- * ```lua
- * local permissions = {"publish_actions"}
- * facebook.login_with_publish_permissions(permissions, facebook.AUDIENCE_FRIENDS, function(self, data)
- *     if (data.status == facebook.STATE_OPEN and data.error == nil) then
- *         print("Successfully logged into Facebook")
- *         pprint(facebook.permissions())
- *     else
- *         print("Failed to get permissions (" .. data.status .. ")")
- *         pprint(data)
- *     end
- * end)
- * ```
- */
 void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
 {
@@ -761,13 +613,6 @@ int Facebook_Login(lua_State* L)
     return 0;
 }
 
- /*# logout from Facebook
- *
- * Logout from Facebook.
- *
- * @name facebook.logout
- *
- */
 int Facebook_Logout(lua_State* L)
 {
     if(!g_Facebook.m_Login)
@@ -856,34 +701,6 @@ int Facebook_RequestPublishPermissions(lua_State* L)
     return 0;
 }
 
-/*# get the current Facebook access token
- *
- * This function returns the currently stored access token after a previous
- * sucessful login. If it returns nil no access token exists and you need
- * to perform a login to get the wanted permissions.
- *
- * @name facebook.access_token
- * @return token [type:string] the access token or nil if the user is not logged in
- * @examples
- *
- * Get the current access token, then use it to perform a graph API request.
- *
- * ```lua
- * local function get_name_callback(self, id, response)
- *     -- do something with the response
- * end
- *
- * function init(self)
- *     -- assuming we are already logged in.
- *     local token = facebook.access_token()
- *     if token then
- *         local url = "https://graph.facebook.com/me/?access_token=".. token
- *         http.request(url, "GET", get_name_callback)
- *     end
- * end
- * ```
- */
-
 int Facebook_AccessToken(lua_State* L)
 {
     if(!g_Facebook.m_Login)
@@ -895,25 +712,6 @@ int Facebook_AccessToken(lua_State* L)
     return 1;
 }
 
-/*# get the currently granted permissions
- *
- * This function returns a table with all the currently granted permission strings.
- *
- * @name facebook.permissions
- * @return permissions [type:table] the permissions
- * @examples
- *
- * Check the currently granted permissions for a particular permission:
- *
- * ```lua
- * for _,permission in ipairs(facebook.permissions()) do
- *     if permission == "user_likes" then
- *         -- "user_likes" granted...
- *         break
- *     end
- * end
- * ```
- */
 int Facebook_Permissions(lua_State* L)
 {
     if(!g_Facebook.m_Login)
@@ -963,65 +761,6 @@ int Facebook_Me(lua_State* L)
     return 1;
 }
 
-/*# post an event to Facebook Analytics
- *
- * This function will post an event to Facebook Analytics where it can be used
- * in the Facebook Insights system.
- *
- * @name facebook.post_event
- *
- * @param event [type:constant|string] An event can either be one of the predefined
- * constants below or a text string which can be used to define a custom event that is
- * registered with Facebook Analytics.
- *
- * - `facebook.EVENT_ACHIEVED_LEVEL`
- * - `facebook.EVENT_ACTIVATED_APP`
- * - `facebook.EVENT_ADDED_PAYMENT_INFO`
- * - `facebook.EVENT_ADDED_TO_CART`
- * - `facebook.EVENT_ADDED_TO_WISHLIST`
- * - `facebook.EVENT_COMPLETED_REGISTRATION`
- * - `facebook.EVENT_COMPLETED_TUTORIAL`
- * - `facebook.EVENT_DEACTIVATED_APP`
- * - `facebook.EVENT_INITIATED_CHECKOUT`
- * - `facebook.EVENT_PURCHASED`
- * - `facebook.EVENT_RATED`
- * - `facebook.EVENT_SEARCHED`
- * - `facebook.EVENT_SESSION_INTERRUPTIONS`
- * - `facebook.EVENT_SPENT_CREDITS`
- * - `facebook.EVENT_TIME_BETWEEN_SESSIONS`
- * - `facebook.EVENT_UNLOCKED_ACHIEVEMENT`
- * - `facebook.EVENT_VIEWED_CONTENT`
- *
- * @param value [type:number] a numeric value for the event. This should
- * represent the value of the event, such as the level achieved, price for an
- * item or number of orcs killed.
- *
- * @param [params] [type:table] optional table with parameters and their values. A key in the
- * table can either be one of the predefined constants below or a text which
- * can be used to define a custom parameter.
- *
- * - `facebook.PARAM_CONTENT_ID`
- * - `facebook.PARAM_CONTENT_TYPE`
- * - `facebook.PARAM_CURRENCY`
- * - `facebook.PARAM_DESCRIPTION`
- * - `facebook.PARAM_LEVEL`
- * - `facebook.PARAM_MAX_RATING_VALUE`
- * - `facebook.PARAM_NUM_ITEMS`
- * - `facebook.PARAM_PAYMENT_INFO_AVAILABLE`
- * - `facebook.PARAM_REGISTRATION_METHOD`
- * - `facebook.PARAM_SEARCH_STRING`
- * - `facebook.PARAM_SOURCE_APPLICATION`
- * - `facebook.PARAM_SUCCESS`
- *
- * @examples
- *
- * Post a spent credits event to Facebook Analytics:
- *
- * ```lua
- * params = {[facebook.PARAM_LEVEL] = 30, [facebook.PARAM_NUM_ITEMS] = 2}
- * facebook.post_event(facebook.EVENT_SPENT_CREDITS, 25, params)
- * ```
- */
 int Facebook_PostEvent(lua_State* L)
 {
     int argc = lua_gettop(L);
@@ -1055,18 +794,6 @@ int Facebook_PostEvent(lua_State* L)
     return 0;
 }
 
-/*# enable event usage with Facebook Analytics
- *
- * This function will enable event usage for Facebook Analytics which means
- * that Facebook will be able to use event data for ad-tracking.
- *
- * [icon:attention] Event usage cannot be controlled and is always enabled for the
- * Facebook Canvas platform, therefore this function has no effect on Facebook
- * Canvas.
- *
- * @name facebook.enable_event_usage
- *
- */
 int Facebook_EnableEventUsage(lua_State* L)
 {
     [FBSDKSettings setLimitEventAndDataUsage:false];
@@ -1074,19 +801,6 @@ int Facebook_EnableEventUsage(lua_State* L)
     return 0;
 }
 
-/*# disable event usage with Facebook Analytics
- *
- * This function will disable event usage for Facebook Analytics which means
- * that Facebook won't be able to use event data for ad-tracking. Events will
- * still be sent to Facebook for insights.
- *
- * [icon:attention] Event usage cannot be controlled and is always enabled for the
- * Facebook Canvas platform, therefore this function has no effect on Facebook
- * Canvas.
- *
- * @name facebook.disable_event_usage
- *
- */
 int Facebook_DisableEventUsage(lua_State* L)
 {
     [FBSDKSettings setLimitEventAndDataUsage:true];
@@ -1094,102 +808,6 @@ int Facebook_DisableEventUsage(lua_State* L)
     return 0;
 }
 
-/*# show facebook web dialog
- *
- * Display a Facebook web dialog of the type specified in the <code>dialog</code> parameter.
- * The <code>param</code> table should be set up according to the requirements of each dialog
- * type. Note that some parameters are mandatory. Below is the list of available dialogs and
- * where to find Facebook's developer documentation on parameters and response data.
- *
- * ### "apprequests"
- *
- * Shows a Game Request dialog. Game Requests allows players to invite their friends to play a
- * game. Available parameters:
- *
- * - [type:string] `title`
- * - [type:string] `message`
- * - [type:number] `action_type`
- * - [type:number] `filters`
- * - [type:string] `data`
- * - [type:string] `object_id`
- * - [type:table] `suggestions`
- * - [type:table] `recipients`
- * - [type:string] `to`
- *
- * On success, the "result" table parameter passed to the callback function will include the following fields:
- *
- * - [type:string] `request_id`
- * - [type:table] `to`
- *
- * Details for each parameter: <a href='https://developers.facebook.com/docs/games/services/gamerequests/v2.6#dialogparameters'>https://developers.facebook.com/docs/games/services/gamerequests/v2.6#dialogparameters</a>
- *
- * ### "feed"
- *
- * The Feed Dialog allows people to publish individual stories to their timeline.
- *
- * - [type:string] `caption`
- * - [type:string] `description`
- * - [type:string] `picture`
- * - [type:string] `link`
- * - [type:table] `people_ids`
- * - [type:string] `place_id`
- * - [type:string] `ref`
- *
- * On success, the "result" table parameter passed to the callback function will include the following fields:
- *
- * - [type:string] `post_id`
- *
- * Details for each parameter: <a href='https://developers.facebook.com/docs/sharing/reference/feed-dialog/v2.6#params'>https://developers.facebook.com/docs/sharing/reference/feed-dialog/v2.6#params</a>
- *
- * ### "appinvite"
- *
- * The App Invite dialog is available only on iOS and Android.
- * Note that the <code>url</code> parameter
- * corresponds to the appLinkURL (iOS) and setAppLinkUrl (Android) properties.
- *
- * - [type:string] `url`
- * - [type:string] `preview_image`
- *
- * Details for each parameter: <a href='https://developers.facebook.com/docs/reference/ios/current/class/FBSDKAppInviteContent/'>https://developers.facebook.com/docs/reference/ios/current/class/FBSDKAppInviteContent/</a>
- *
- * @name facebook.show_dialog
- * @param dialog [type:string] dialog to show.
- * - `"apprequests"`
- * - `"feed"`
- * - `"appinvite"`
- * @param param [type:table] table with dialog parameters
- * @param callback [type:function(self, result, error)] callback function that is called when the dialog is closed.
- *
- * `self`
- * : [type:object] The context of the calling script
- *
- * `result`
- * : [type:table] Table with dialog specific results. See above.
- *
- * `error`
- * : [type:table] Error message. If there is no error, `error` is `nil`.
- *
- * @examples
- *
- * Show a dialog allowing the user to share a post to their timeline:
- *
- * ```lua
- * local function fb_share(self, result, error)
- *     if error then
- *         -- something did not go right...
- *     else
- *         -- do something sensible
- *     end
- * end
- *
- * function init(self)
- *     -- assuming we have logged in with publish permissions
- *     local param = { link = "http://www.mygame.com",picture="http://www.mygame.com/image.jpg" }
- *     facebook.show_dialog("feed", param, fb_share)
- * end
- * ```
- *
- */
 int Facebook_ShowDialog(lua_State* L)
 {
     if(!g_Facebook.m_Login)
@@ -1278,289 +896,13 @@ int Facebook_ShowDialog(lua_State* L)
 
 } // namespace
 
-
-/*# the Facebook login session is open
- *
- * @name facebook.STATE_OPEN
- * @variable
- */
-
-/*# the Facebook login session has closed because login failed
- *
- * @name facebook.STATE_CLOSED_LOGIN_FAILED
- * @variable
- */
-
-/*# game request action type "none" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_ACTIONTYPE_NONE
- * @variable
- */
-
-/*# game request action type "send" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_ACTIONTYPE_SEND
- * @variable
- */
-
-/*# game request action type "askfor" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_ACTIONTYPE_ASKFOR
- * @variable
- */
-
-/*# game request action type "turn" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_ACTIONTYPE_TURN
- * @variable
- */
-
-/*# game request filter type "none" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_FILTER_NONE
- * @variable
- */
-
-/*# game request filter type "app_users" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_FILTER_APPUSERS
- * @variable
- */
-
-/*# game request filter type "app_non_users" for "apprequests" dialog
- *
- * @name facebook.GAMEREQUEST_FILTER_APPNONUSERS
- * @variable
- */
-
-/*# publish permission to reach no audience
- *
- * @name facebook.AUDIENCE_NONE
- * @variable
- */
-
-/*# publish permission to reach only me (private to current user)
- *
- * @name facebook.AUDIENCE_ONLYME
- * @variable
- */
-
-/*# publish permission to reach user friends
- *
- * @name facebook.AUDIENCE_FRIENDS
- * @variable
- */
-
-/*# publish permission to reach everyone
- *
- * @name facebook.AUDIENCE_EVERYONE
- * @variable
- */
-
- /*# log this event when the user has entered their payment info
-  *
-  * @name facebook.EVENT_ADDED_PAYMENT_INFO
-  * @variable
-  */
-
- /*# log this event when the user has added an item to their cart
-  *
-  * The value_to_sum passed to facebook.post_event should be the item's price.
-  *
-  * @name facebook.EVENT_ADDED_TO_CART
-  * @variable
-  */
-
- /*# log this event when the user has added an item to their wish list
-  *
-  * The value_to_sum passed to facebook.post_event should be the item's price.
-  *
-  * @name facebook.EVENT_ADDED_TO_WISHLIST
-  * @variable
-  */
-
- /*# log this event when a user has completed registration with the app
-  *
-  * @name facebook.EVENT_COMPLETED_REGISTRATION
-  * @variable
-  */
-
- /*# log this event when the user has completed a tutorial in the app
-  *
-  * @name facebook.EVENT_COMPLETED_TUTORIAL
-  * @variable
-  */
-
- /*# log this event when the user has entered the checkout process
-  *
-  * The value_to_sum passed to facebook.post_event should be the total price in
-  * the cart.
-  *
-  * @name facebook.EVENT_INITIATED_CHECKOUT
-  * @variable
-  */
-
- /*# Log this event when the user has completed a purchase.
-  *
-  * @name facebook.EVENT_PURCHASED
-  * @variable
-  */
-
- /*# log this event when the user has rated an item in the app
-  *
-  * The value_to_sum passed to facebook.post_event should be the numeric rating.
-  *
-  * @name facebook.EVENT_RATED
-  * @variable
-  */
-
- /*# log this event when a user has performed a search within the app
-  *
-  * @name facebook.EVENT_SEARCHED
-  * @variable
-  */
-
- /*# log this event when the user has spent app credits
-  *
-  * The value_to_sum passed to facebook.post_event should be the number of
-  * credits spent.
-  *
-  * [icon:attention] This event is currently an undocumented event in the Facebook
-  * SDK.
-  *
-  * @name facebook.EVENT_SPENT_CREDITS
-  * @variable
-  */
-
- /*# log this event when measuring the time between user sessions
-  *
-  * @name facebook.EVENT_TIME_BETWEEN_SESSIONS
-  * @variable
-  */
-
- /*# log this event when the user has unlocked an achievement in the app
-  *
-  * @name facebook.EVENT_UNLOCKED_ACHIEVEMENT
-  * @variable
-  */
-
- /*# log this event when a user has viewed a form of content in the app
-  *
-  * @name facebook.EVENT_VIEWED_CONTENT
-  * @variable
-  */
-
- /*# parameter key used to specify an ID for the content being logged about
-  *
-  * The parameter key could be an EAN, article identifier, etc., depending
-  * on the nature of the app.
-  *
-  * @name facebook.PARAM_CONTENT_ID
-  * @variable
-  */
-
- /*# parameter key used to specify a generic content type/family for the logged event
-  *
-  * The key is an arbitrary type/family (e.g. "music", "photo", "video") depending
-  * on the nature of the app.
-  *
-  * @name facebook.PARAM_CONTENT_TYPE
-  * @variable
-  */
-
- /*# parameter key used to specify currency used with logged event
-  *
-  * Use a currency value key, e.g. "USD", "EUR", "GBP" etc.
-  * See ISO-4217 for specific values.
-  *
-  * @name facebook.PARAM_CURRENCY
-  * @variable
-  */
-
- /*# parameter key used to specify a description appropriate to the event being logged
-  *
-  * Use this for app specific event description, for instance the name of the achievement
-  * unlocked in the facebook.EVENT_UNLOCKED_ACHIEVEMENT event.
-  *
-  * @name facebook.PARAM_DESCRIPTION
-  * @variable
-  */
-
- /*# parameter key used to specify the level achieved
-  *
-  * @name facebook.PARAM_LEVEL
-  * @variable
-  */
-
- /*# parameter key used to specify the maximum rating available
-  *
-  * Set to specify the max rating available for the facebook.EVENT_RATED event.
-  * E.g., "5" or "10".
-  *
-  * @name facebook.PARAM_MAX_RATING_VALUE
-  * @variable
-  */
-
- /*# parameter key used to specify how many items are being processed
-  *
-  * Set to specify the number of items being processed for an
-  * facebook.EVENT_INITIATED_CHECKOUT or facebook.EVENT_PURCHASED event.
-  *
-  * @name facebook.PARAM_NUM_ITEMS
-  * @variable
-  */
-
- /*# parameter key used to specify whether payment info is available
-  *
-  * Set to specify if payment info is available for the
-  * facebook.EVENT_INITIATED_CHECKOUT event.
-  *
-  * @name facebook.PARAM_PAYMENT_INFO_AVAILABLE
-  * @variable
-  */
-
- /*# parameter key used to specify method user has used to register for the app
-  *
-  * Set to specify what registation method a user used for the app, e.g.
-  * "Facebook", "email", "Twitter", etc.
-  *
-  * @name facebook.PARAM_REGISTRATION_METHOD
-  * @variable
-  */
-
- /*# parameter key used to specify user search string
-  *
-  * Set this to the the string that the user provided for a search
-  * operation.
-  *
-  * @name facebook.PARAM_SEARCH_STRING
-  * @variable
-  */
-
- /*# parameter key used to specify source application package
-  *
-  * @name facebook.PARAM_SOURCE_APPLICATION
-  * @variable
-  */
-
- /*# parameter key used to specify activity success
-  *
-  * Set this key to indicate whether the activity being logged about was
-  * successful or not.
-  *
-  * @name facebook.PARAM_SUCCESS
-  * @variable
-  */
-
-
-static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
+bool Platform_FacebookInitialized()
 {
-    const char* app_id = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0);
-    if( !app_id )
-    {
-        dmLogDebug("No facebook.appid. Disabling module");
-        return dmExtension::RESULT_OK;
-    }
+    return g_Facebook.m_Login != 0;
+}
+
+dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
+{
     g_Facebook.m_Delegate = [[FacebookAppDelegate alloc] init];
     dmExtension::RegisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
 
@@ -1573,7 +915,8 @@ static dmExtension::Result AppInitializeFacebook(dmExtension::AppParams* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
+
+dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
 {
     if(!g_Facebook.m_Login)
     {
@@ -1585,15 +928,27 @@ static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
 {
-    dmFacebook::LuaInit(params->m_L);
+    (void)params;
     return dmExtension::RESULT_OK;
 }
 
-static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
+dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 {
+    (void)params;
     return dmExtension::RESULT_OK;
 }
 
-DM_DECLARE_EXTENSION(FacebookExt, "Facebook", AppInitializeFacebook, AppFinalizeFacebook, InitializeFacebook, 0, 0, FinalizeFacebook)
+dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params)
+{
+    (void)params;
+    return dmExtension::RESULT_OK;
+}
+
+void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
+{
+    (void)params; (void)event;
+}
+
+#endif // DM_PLATFORM_IOS

@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#include <dlib/log.h>
+#include <dmsdk/dlib/log.h>
 #include "facebook_private.h"
 
 namespace
@@ -167,10 +167,10 @@ void dmFacebook::Analytics::GetParameterTable(lua_State* L, int index, const cha
     *length = position;
 }
 
-void dmFacebook::Analytics::RegisterConstants(lua_State* L)
+void dmFacebook::Analytics::RegisterConstants(lua_State* L, const char* modulename)
 {
-    // Add constants to table LIB_NAME
-    lua_getglobal(L, LIB_NAME);
+    // Add constants to table
+    lua_getglobal(L, modulename);
 
     #define SETCONSTANT(name, val) \
         lua_pushnumber(L, (lua_Number) val); lua_setfield(L, -2, #name);
