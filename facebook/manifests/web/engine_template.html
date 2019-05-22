@@ -1,0 +1,30 @@
+<html>
+<head>
+<!--    <style type='text/css'>
+        /* DEF-3413
+        * The Facebook container will be populated with the Facebook SDK content
+        * when a Facebook App Id is provided in game.project.
+        * This caused problems with selections in Chrome on Windows, just like
+        * above. Explicitly disabling selection on the root div fixes the issue.
+        */
+        .fb-root {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style> -->
+</head>
+<body>
+    <script id='engine-start' type='text/javascript' merge='keep'>
+        // Load Facebook API
+        var fb = document.createElement('script');
+        fb.type = 'text/javascript';
+        fb.src = '//connect.facebook.net/en_US/sdk.js';
+        fb.onload = load_engine;
+        document.head.appendChild(fb);
+    </script>
+</body>
+</html>

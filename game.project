@@ -1,0 +1,23 @@
+[project]
+dependencies = https://github.com/andsve/dirtylarry/archive/master.zip
+title = extension-facebook
+
+[bootstrap]
+main_collection = /main/main.collectionc
+
+[script]
+shared_state = 1
+
+[display]
+width = 375
+height = 667
+high_dpi = 1
+
+[ios]
+bundle_identifier = com.defoldextension.facebook
+
+[android]
+package = com.defoldextension.facebook
+
+[library]
+include_dirs = facebook
