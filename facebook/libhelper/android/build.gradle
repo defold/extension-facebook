@@ -1,0 +1,141 @@
+apply plugin: 'java'
+
+repositories {
+    maven {
+        url "https://maven.google.com/"
+    }
+    mavenCentral()
+}
+
+def fbVersion = "5.0.0"
+
+// * Build once with these support dependencies only
+// * Then run: jar tvf ./build/package/share/java/facebooksdk-5.0.0.jar > support.txt
+// * Then revert the support dependencies in favor of the actual fb dependencies
+// dependencies {
+//     compile "com.android.support:support-v4:27.1.1"
+//     compile "com.android.support:support-compat:27.1.1"
+//     compile "com.android.support:support-core-utils:27.1.1"
+//     compile "com.android.support:support-core-ui:27.1.1"
+//     compile "com.android.support:support-media-compat:27.1.1"
+//     compile "com.android.support:support-fragment:27.1.1"
+//     compile "com.android.support:support-annotations:27.1.1"
+// }
+
+dependencies {
+
+    // Facebook Core only (Analytics)
+    compile "com.facebook.android:facebook-core:${fbVersion}"
+
+    // Facebook Login only
+    compile "com.facebook.android:facebook-login:${fbVersion}"
+
+    // Facebook Share only
+    compile "com.facebook.android:facebook-share:${fbVersion}"
+
+    // // Facebook Places only
+    // compile "com.facebook.android:facebook-places:${fbVersion}"
+
+    // // Facebook Messenger only
+    // compile "com.facebook.android:facebook-messenger:${fbVersion}"
+
+    // // Facebook App Links only
+    // compile "com.facebook.android:facebook-applinks:${fbVersion}"
+
+    // Facebook Android SDK (everything)
+    compile "com.facebook.android:facebook-android-sdk:${fbVersion}"
+}
+
+def outputPackageName = "facebooksdk-${fbVersion}"
+def resultDirectory = "${project.buildDir}/result"
+def packedDirectory = "${resultDirectory}/packed"
+def aarDirectory = "${packedDirectory}/aar"
+def unpackedDirectory = "${resultDirectory}/unpacked"
+def unpackedClassesDirectory = "${unpackedDirectory}/classes"
+def packageOutputDirectory = "${project.buildDir}/package"
+def packageDirectory = "${packageOutputDirectory}/share/java"
+def packageResDirectory = "${packageDirectory}/res"
+
+task copyArtifacts() {
+    outputs.dir packedDirectory
+
+    project.configurations.runtime.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+        println "${artifact.moduleVersion.id.group}.${artifact.name}-${artifact.moduleVersion.id.version}.${artifact.extension}"
+        copy {
+            from artifact.file
+            into packedDirectory
+            rename "(.*)", "${artifact.moduleVersion.id.group}.${artifact.name}-${artifact.moduleVersion.id.version}.${artifact.extension}"
+        }
+    }
+}
+
+task unzipJars(dependsOn: copyArtifacts) {
+    inputs.dir packedDirectory
+    outputs.dir unpackedClassesDirectory
+
+    doLast {
+        println('*** Unzip jars')
+        fileTree(dir: packedDirectory).include('*.jar').each { lib ->
+            copy {
+                println "Unzip $lib.name"
+                from zipTree(lib)
+                into unpackedClassesDirectory
+                exclude 'META-INF/'
+                exclude 'NOTICE.txt'
+            }
+        }
+    }
+}
+
+task unzipAars(dependsOn: unzipJars) {
+    inputs.dir packedDirectory
+    outputs.dir unpackedClassesDirectory
+
+    doLast {
+        println('*** Unzip aars')
+        fileTree(dir: packedDirectory).include('*.aar').each { lib ->
+            copy {
+                println "Unzip $lib.name"
+                def dirName = lib.name - '.aar'
+                from zipTree(lib)
+                into "${aarDirectory}/${dirName}"
+            }
+        }
+        println('*** Unzip jars from aars')
+        fileTree(dir: "${aarDirectory}").include('**/*.jar').each { lib ->
+            copy {
+                println "Unzip $lib.name"
+                from zipTree(lib)
+                into unpackedClassesDirectory
+                exclude 'META-INF/'
+            }
+        }
+    }
+}
+
+task zipClasses(dependsOn: unzipAars, type: Zip) {
+    from unpackedClassesDirectory
+    archiveName "${outputPackageName}.jar"
+    destinationDir file("${packageDirectory}")
+}
+
+task collectResources(dependsOn: zipClasses, type:Exec) {
+    commandLine 'python', 'extract_res.py', "${aarDirectory}", "${packageResDirectory}"
+}
+
+task fixResPermissions(dependsOn: collectResources, type:Exec) {
+    commandLine "chmod", "-R", "+rw", "${packageResDirectory}"
+}
+
+task createPackage(dependsOn: fixResPermissions, type: Tar) {
+    from packageOutputDirectory
+    archiveName "${outputPackageName}.tar.gz"
+    compression = Compression.GZIP
+    destinationDir file("./")
+}
+
+build.dependsOn createPackage
+
+clean {
+    delete "${project.buildDir}"
+}
