@@ -79,8 +79,8 @@ class FacebookAppJNI {
             public void run() {
                 String s = String.format("sdkInitialize: activity %s   appid: %s", FacebookAppJNI.this.activity, FacebookAppJNI.this.appId);
                 Log.d(TAG, s);
-                FacebookSdk.sdkInitialize( FacebookAppJNI.this.activity );
                 FacebookSdk.setApplicationId( FacebookAppJNI.this.appId );
+                FacebookSdk.sdkInitialize( FacebookAppJNI.this.activity );
                 latch.countDown();
             }
         });
