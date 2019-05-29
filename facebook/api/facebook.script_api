@@ -220,7 +220,6 @@
       desc: A numeric value for the event. This should represent the value of the event, such as the level achieved,
             price for an item or number of orcs killed.
 
-    parameters:
     - name: params
       type: table
       optional: true
