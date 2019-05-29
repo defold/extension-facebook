@@ -1,5 +1,5 @@
 - name: facebook
-  type: TABLE
+  type: table
   desc: Functions and constants for interacting with Facebook APIs
 
   members:
@@ -7,7 +7,7 @@
 #*****************************************************************************************************
 
   - name: login_with_read_permissions
-    type: FUNCTION
+    type: function
     desc: Login to Facebook and request a set of publish permissions.
 
           The user is prompted to authorize the application using the login dialog of the specific
@@ -24,28 +24,25 @@
           A comprehensive list of permissions can be found in the [Facebook permissions](https://developers.facebook.com/docs/facebook-login/permissions) documentation,
           as well as in their [guide to best practises for login management](https://developers.facebook.com/docs/facebook-login/best-practices).
 
-          [replaces] facebook.login facebook.request_read_permissions
-
     parameters:
     - name: permissions
-      type: TABLE
-      desc: Table with the requested read permission strings.
+      type: table
+      desc: table with the requested read permission strings.
 
     - name: callback
-      type: FUNCTION
+      type: function
       desc: Callback function that is executed when the permission request dialog is closed.
       parameters:
         - name: self
-          type: SCRIPT
+          type: object
           desc: The context of the calling script
 
         - name: self
-          type: TABLE
+          type: table
           desc: The context of the calling script
 
     examples:
-    - type: CODE
-      desc: |-
+    - desc: |-
             Log in to Facebook with a set of read permissions
             ```lua
             local permissions = {"public_profile", "email", "user_friends"}
@@ -63,7 +60,7 @@
 #*****************************************************************************************************
 
   - name: login_with_publish_permissions
-    type: FUNCTION
+    type: function
     desc: Login to Facebook and request a set of publish permissions.
 
           The user is prompted to authorize the application using the login dialog of the specific
@@ -78,14 +75,12 @@
           A comprehensive list of permissions can be found in the [Facebook permissions](https://developers.facebook.com/docs/facebook-login/permissions) documentation,
           as well as in their [guide to best practises for login management](https://developers.facebook.com/docs/facebook-login/best-practices).
 
-          [replaces] facebook.login facebook.request_publish_permissions
-
     parameters:
     - name: permissions
-      type: TABLE
-      desc: Table with the requested publish permission strings.
+      type: table
+      desc: table with the requested publish permission strings.
     - name: audience
-      type: [ENUM, NUMBER]
+      type: number
       desc: The audience that should be able to see the publications.
             Can be any of
 
@@ -95,20 +90,19 @@
               - `facebook.AUDIENCE_EVERYONE`
 
     - name: callback
-      type: FUNCTION
+      type: function
       desc: Callback function that is executed when the permission request dialog is closed.
       parameters:
         - name: self
-          type: SCRIPT
+          type: object
           desc: The context of the calling script
 
         - name: data
-          type: TABLE
+          type: table
           desc: A table that contains the response
 
     examples:
-    - type: CODE
-      desc: |-
+    - desc: |-
             Log in to Facebook with a set of publish permissions
             ```lua
             local permissions = {"publish_actions"}
@@ -126,13 +120,13 @@
 #*****************************************************************************************************
 
   - name: logout
-    type: FUNCTION
+    type: function
     desc: Logout from Facebook
 
 #*****************************************************************************************************
 
   - name: access_token
-    type: FUNCTION
+    type: function
     desc: Get the current Facebook access token.
 
           This function returns the currently stored access token after a previous
@@ -141,12 +135,11 @@
 
     returns:
     - name: token
-      type: STRING
+      type: string
       desc: the access token or nil if the user is not logged in
 
     examples:
-    - type: CODE
-      desc: |-
+    - desc: |-
             Get the current access token, then use it to perform a graph API request.
 
             ```lua
@@ -166,19 +159,18 @@
 #*****************************************************************************************************
 
   - name: permissions
-    type: FUNCTION
+    type: function
     desc: Get the currently granted permissions.
 
           This function returns a table with all the currently granted permission strings.
 
     returns:
     - name: permissions
-      type: TABLE
+      type: table
       desc: The permissions
 
     examples:
-    - type: CODE
-      desc: |-
+    - desc: |-
             Check the currently granted permissions for a particular permission
 
             ```lua
@@ -194,14 +186,14 @@
 #*****************************************************************************************************
 
   - name: post_event
-    type: FUNCTION
+    type: function
     desc: Post an event to Facebook Analytics
 
           This function will post an event to Facebook Analytics where it can be used in the Facebook Insights system.
 
     parameters:
     - name: event
-      type: [ENUM, STRING]
+      type: [number, string]
       desc: An event can either be one of the predefined constants below or a text string
             which can be used to define a custom event that is registered with Facebook Analytics.
 
@@ -224,13 +216,13 @@
             - `facebook.EVENT_VIEWED_CONTENT`
 
     - name: value
-      type: NUMBER
+      type: number
       desc: A numeric value for the event. This should represent the value of the event, such as the level achieved,
             price for an item or number of orcs killed.
 
     parameters:
     - name: params
-      type: TABLE
+      type: table
       optional: true
       desc: Optional table with parameters and their values. A key in the table can
             either be one of the predefined constants below or a text which can be used to define a custom parameter.
@@ -249,8 +241,7 @@
             - `facebook.PARAM_SUCCESS`
 
     examples:
-    - type: CODE
-      desc: |-
+    - desc: |-
             Post a spent credits event to Facebook Analytics
 
             ```lua
@@ -261,7 +252,7 @@
 #*****************************************************************************************************
 
   - name: enable_event_usage
-    type: FUNCTION
+    type: function
     desc: Enable event usage with Facebook Analytics
           This function will enable event usage for Facebook Analytics which means
           that Facebook will be able to use event data for ad-tracking.
@@ -273,7 +264,7 @@
 #*****************************************************************************************************
 
   - name: disable_event_usage
-    type: FUNCTION
+    type: function
     desc: Disable event usage with Facebook Analytics
           This function will disable event usage for Facebook Analytics which means
           that Facebook won't be able to use event data for ad-tracking. Events will
@@ -286,7 +277,7 @@
 #*****************************************************************************************************
 
   - name: show_dialog
-    type: FUNCTION
+    type: function
     desc: Show facebook web dialog
 
           Display a Facebook web dialog of the type specified in the `dialog` parameter.
@@ -322,7 +313,7 @@
 
 
 
-          On success, the "result" table parameter passed to the callbacak function will include the following fields
+          On success, the "result" table parameter passed to the callback function will include the following fields
 
               - [type:string] `request_id`
 
@@ -375,36 +366,35 @@
 
     parameters:
     - name: dialog
-      type: STRING
+      type: string
       desc: Dialog to show
             - `"apprequests"`
             - `"feed"`
             - `"appinvite"`
 
     - name: param
-      type: TABLE
-      desc: Table with dialog parameters
+      type: table
+      desc: table with dialog parameters
 
     - name: callback
-      type: FUNCTION
+      type: function
       desc: Callback function that is called when the dialog is closed.
 
       parameters:
       - name: self
-        type: SCRIPT
+        type: object
         desc: The context of the calling script
 
       - name: result
-        type: TABLE
-        desc: Table with dialog specific results. See above.
+        type: table
+        desc: table with dialog specific results. See above.
 
       - name: error
-        type: [TABLE, NIL]
+        type: [table, nil]
         desc: Error message. If there is no error, `error` is `nil`.
 
     examples:
-    - type: CODE
-      desc: |-
+    - desc: |-
             Show a dialog allowing the user to share a post to their timeline
 
             ```lua
@@ -425,84 +415,84 @@
 #*****************************************************************************************************
 
   - name: STATE_OPEN
-    type: ENUM
+    type: number
     desc: The Facebook login session is open
 
   - name: STATE_CLOSED_LOGIN_FAILED
-    type: ENUM
+    type: number
     desc: The Facebook login session has closed because login failed
 
   - name: GAMEREQUEST_ACTIONTYPE_NONE
-    type: ENUM
+    type: number
     desc: Game request action type "none" for "apprequests" dialog
 
   - name: GAMEREQUEST_ACTIONTYPE_SEND
-    type: ENUM
+    type: number
     desc: Game request action type "send" for "apprequests" dialog
 
   - name: GAMEREQUEST_ACTIONTYPE_ASKFOR
-    type: ENUM
+    type: number
     desc: Game request action type "askfor" for "apprequests" dialog
 
   - name: GAMEREQUEST_ACTIONTYPE_TURN
-    type: ENUM
+    type: number
     desc: Game request action type "turn" for "apprequests" dialog
 
   - name: GAMEREQUEST_FILTER_NONE
-    type: ENUM
+    type: number
     desc: Game request filter type "none" for "apprequests" dialog
 
   - name: GAMEREQUEST_FILTER_APPUSERS
-    type: ENUM
+    type: number
     desc: Game request filter type "app_users" for "apprequests" dialog
 
   - name: GAMEREQUEST_FILTER_APPNONUSERS
-    type: ENUM
+    type: number
     desc: Game request filter type "app_non_users" for "apprequests" dialog
 
   - name: EVENT_ADDED_PAYMENT_INFO
-    type: ENUM
+    type: number
     desc: Log this event when the user has entered their payment info
 
   - name: EVENT_ADDED_TO_CART
-    type: ENUM
+    type: number
     desc: Log this event when the user has added an item to their cart
           The value_to_sum passed to facebook.post_event should be the item's price.
 
   - name: EVENT_ADDED_TO_WISHLIST
-    type: ENUM
+    type: number
     desc: Log this event when the user has added an item to their wish list
           The value_to_sum passed to facebook.post_event should be the item's price.
 
   - name: EVENT_COMPLETED_REGISTRATION
-    type: ENUM
+    type: number
     desc: Log this event when a user has completed registration with the app
 
   - name: EVENT_COMPLETED_TUTORIAL
-    type: ENUM
+    type: number
     desc: Log this event when the user has completed a tutorial in the app
 
   - name: EVENT_INITIATED_CHECKOUT
-    type: ENUM
+    type: number
     desc: Log this event when the user has entered the checkout process
           The value_to_sum passed to facebook.post_event should be the total price in
           the cart.
 
   - name: EVENT_PURCHASED
-    type: ENUM
+    type: number
     desc: Log this event when the user has completed a purchase.
           The value_to_sum passed to facebook.post_event should be the numeric rating.
 
   - name: EVENT_RATED
-    type: ENUM
+    type: number
     desc: Log this event when the user has rated an item in the app
 
   - name: EVENT_SEARCHED
-    type: ENUM
+    type: number
     desc: Log this event when a user has performed a search within the app
 
   - name: EVENT_SPENT_CREDITS
-    type: ENUM
+    type: number
     desc: Log this event when the user has spent app credits
 
           The value_to_sum passed to facebook.post_event should be the number of credits spent.
@@ -510,107 +500,107 @@
           [icon:attention] This event is currently an undocumented event in the Facebook SDK.
 
   - name: EVENT_TIME_BETWEEN_SESSIONS
-    type: ENUM
+    type: number
     desc: Log this event when measuring the time between user sessions
 
   - name: EVENT_UNLOCKED_ACHIEVEMENT
-    type: ENUM
+    type: number
     desc: Log this event when the user has unlocked an achievement in the app
 
   - name: EVENT_VIEWED_CONTENT
-    type: ENUM
+    type: number
     desc: Log this event when a user has viewed a form of content in the app
 
   - name: PARAM_CONTENT_ID
-    type: ENUM
+    type: number
     desc: Parameter key used to specify an ID for the content being logged about
 
           The parameter key could be an EAN, article identifier, etc., depending
           on the nature of the app.
 
   - name: PARAM_CONTENT_TYPE
-    type: ENUM
+    type: number
     desc: Parameter key used to specify a generic content type/family for the logged event
 
           The key is an arbitrary type/family (e.g. "music", "photo", "video") depending
           on the nature of the app.
 
   - name: PARAM_CURRENCY
-    type: ENUM
+    type: number
     desc: Parameter key used to specify currency used with logged event
 
           Use a currency value key, e.g. "USD", "EUR", "GBP" etc.
           See See ISO-4217 for specific values.
 
   - name: PARAM_DESCRIPTION
-    type: ENUM
+    type: number
     desc: Parameter key used to specify a description appropriate to the event being logged
 
           Use this for app specific event description, for instance the name of the achievement
           unlocked in the facebook.EVENT_UNLOCKED_ACHIEVEMENT event.
 
   - name: PARAM_LEVEL
-    type: ENUM
+    type: number
     desc: Parameter key used to specify the level achieved
 
   - name: PARAM_MAX_RATING_VALUE
-    type: ENUM
+    type: number
     desc: Parameter key used to specify the maximum rating available
 
           Set to specify the max rating available for the facebook.EVENT_RATED event.
           E.g., "5" or "10".
 
   - name: PARAM_NUM_ITEMS
-    type: ENUM
+    type: number
     desc: Parameter key used to specify how many items are being processed
 
           Set to specify the number of items being processed for an
           facebook.EVENT_INITIATED_CHECKOUT or facebook.EVENT_PURCHASED event.
 
   - name: PARAM_PAYMENT_INFO_AVAILABLE
-    type: ENUM
+    type: number
     desc: Parameter key used to specify whether payment info is available
 
           Set to specify if payment info is available for the
           facebook.EVENT_INITIATED_CHECKOUT event.
 
   - name: PARAM_REGISTRATION_METHOD
-    type: ENUM
+    type: number
     desc: Parameter key used to specify method user has used to register for the app
 
           Set to specify what registation method a user used for the app, e.g.
           "Facebook", "email", "Twitter", etc.
 
   - name: PARAM_SEARCH_STRING
-    type: ENUM
+    type: number
     desc: Parameter key used to specify user search string
 
           Set this to the the string that the user provided for a search
           operation.
 
   - name: PARAM_SOURCE_APPLICATION
-    type: ENUM
+    type: number
     desc: Parameter key used to specify source application package
 
   - name: PARAM_SUCCESS
-    type: ENUM
+    type: number
     desc: Parameter key used to specify activity success
 
           Set this key to indicate whether the activity being logged about was
           successful or not.
 
   - name: AUDIENCE_NONE
-    type: ENUM
+    type: number
     desc: Publish permission to reach no audience
 
   - name: AUDIENCE_ONLYME
-    type: ENUM
+    type: number
     desc: Publish permission to reach only me (private to current user)
 
   - name: AUDIENCE_FRIENDS
-    type: ENUM
+    type: number
     desc: Publish permission to reach user friends
 
   - name: AUDIENCE_EVERYONE
-    type: ENUM
+    type: number
     desc: Publish permission to reach everyone
