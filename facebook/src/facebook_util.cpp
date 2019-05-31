@@ -639,7 +639,8 @@ void dmFacebook::RunCallback(lua_State* L, int* _self, int* _callback, const cha
 
             if (lua_pcall(L, 2, 0, 0) != 0)
             {
-                dmLogError("Error running facebook callback");
+                dmLogError("Error running facebook callback: %s", lua_tostring(L, -1));
+                lua_pop(L, 1);
             }
 
             dmScript::Unref(L, LUA_REGISTRYINDEX, *_callback);
