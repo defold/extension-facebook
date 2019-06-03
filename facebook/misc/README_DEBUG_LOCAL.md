@@ -57,6 +57,10 @@ Here we describe how to do that.
 
 		$ python ~/facebook_server.py 8000
 
+Or all at once, assuming the bundle-dir is directly under the `extension-facebook` folder:
+
+		$ (cd bundle-dir/extension-facebook/ && ../../facebook/misc/create_cert.sh && python ../../facebook/misc/facebook_server.py 8000)
+
 ## Test the app
 
 * Go to your app page: https://apps.facebook.com/<APP_ID>
