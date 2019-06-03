@@ -7,7 +7,7 @@ struct lua_State;
 
 namespace dmFacebook {
 
-    const char* const GRAPH_API_VERSION = "v2.6";
+    const char* const GRAPH_API_VERSION = "v3.3";
 
     enum State {
         STATE_CREATED              = 1,
@@ -54,7 +54,7 @@ namespace dmFacebook {
     facebook.show_dialog( dialog_type, param_table, callback_func ):
 
     dialog_type == "apprequests":
-        Details for each parameter: https://developers.facebook.com/docs/games/services/gamerequests/v2.6#dialogparameters
+        Details for each parameter: https://developers.facebook.com/docs/games/services/gamerequests/v3.3#dialogparameters
 
                            arg     type            JS                   iOS                Android
         -                title : string [       title,                title,              setTitle ]
@@ -67,7 +67,7 @@ namespace dmFacebook {
         -                   to : string [          to,           recipients,                 setTo ]
 
     dialog_type == "feed":
-        Details for each parameter: https://developers.facebook.com/docs/sharing/reference/feed-dialog/v2.6#params
+        Details for each parameter: https://developers.facebook.com/docs/sharing/reference/feed-dialog/v3.3#params
 
                            arg     type            JS                   iOS                Android
         -              caption : string [     caption,         contentTitle,       setContentTitle ]
