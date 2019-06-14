@@ -90,13 +90,9 @@ namespace dmFacebook {
 
 */
 
-    int Facebook_Login(lua_State* L);
     int Facebook_Logout(lua_State* L);
     int Facebook_AccessToken(lua_State* L);
     int Facebook_Permissions(lua_State* L);
-    int Facebook_RequestReadPermissions(lua_State* L);
-    int Facebook_RequestPublishPermissions(lua_State* L);
-    int Facebook_Me(lua_State* L);
     int Facebook_PostEvent(lua_State* L);
     int Facebook_EnableEventUsage(lua_State* L);
     int Facebook_DisableEventUsage(lua_State* L);

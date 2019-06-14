@@ -47,9 +47,7 @@ struct Facebook
     }
 
     jobject m_FB;
-    jmethodID m_Login;
     jmethodID m_Logout;
-    jmethodID m_IterateMe;
     jmethodID m_IteratePermissions;
     jmethodID m_GetAccessToken;
     jmethodID m_RequestReadPermissions;
@@ -329,35 +327,6 @@ static void VerifyCallback(lua_State* L)
 
 namespace dmFacebook {
 
-int Facebook_Login(lua_State* L)
-{
-    if(!g_Facebook.m_FBApp)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, 1, LUA_TFUNCTION);
-    lua_pushvalue(L, 1);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    JNIEnv* env = Attach();
-
-    env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_Login, (jlong)dmScript::GetMainThread(L));
-
-    if (!Detach(env))
-    {
-        luaL_error(L, "An unexpected error occurred.");
-    }
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
 int Facebook_Logout(lua_State* L)
 {
     if(!g_Facebook.m_FBApp)
@@ -435,79 +404,6 @@ void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permiss
     }
 }
 
-// This function has been deprecated, it is still available but no longer documented.
-int Facebook_RequestReadPermissions(lua_State* L)
-{
-    if(!g_Facebook.m_FBApp)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, top-1, LUA_TTABLE);
-    luaL_checktype(L, top, LUA_TFUNCTION);
-    lua_pushvalue(L, top);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    char permissions[512];
-    dmFacebook::LuaStringCommaArray(L, top-1, permissions, 512);
-
-    JNIEnv* env = Attach();
-
-    jstring str_permissions = env->NewStringUTF(permissions);
-    env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_RequestReadPermissions, (jlong)dmScript::GetMainThread(L), str_permissions);
-    env->DeleteLocalRef(str_permissions);
-
-    if (!Detach(env))
-    {
-        luaL_error(L, "An unexpected error occurred.");
-    }
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
-// This function has been deprecated, it is still available but no longer documented.
-int Facebook_RequestPublishPermissions(lua_State* L)
-{
-    if(!g_Facebook.m_FBApp)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, top-2, LUA_TTABLE);
-    int audience = luaL_checkinteger(L, top-1);
-    luaL_checktype(L, top, LUA_TFUNCTION);
-    lua_pushvalue(L, top);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    char permissions[512];
-    dmFacebook::LuaStringCommaArray(L, top-2, permissions, 512);
-
-    JNIEnv* env = Attach();
-
-    jstring str_permissions = env->NewStringUTF(permissions);
-    env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_RequestPublishPermissions , (jlong)dmScript::GetMainThread(L), (jint)audience, str_permissions);
-    env->DeleteLocalRef(str_permissions);
-
-    if (!Detach(env))
-    {
-        luaL_error(L, "An unexpected error occurred.");
-    }
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
 int Facebook_AccessToken(lua_State* L)
 {
     if(!g_Facebook.m_FBApp)
@@ -550,29 +446,6 @@ int Facebook_Permissions(lua_State* L)
     JNIEnv* env = Attach();
 
     env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_IteratePermissions, (jlong)L);
-
-    if (!Detach(env))
-    {
-        luaL_error(L, "An unexpected error occurred.");
-    }
-
-    assert(top + 1 == lua_gettop(L));
-    return 1;
-}
-
-int Facebook_Me(lua_State* L)
-{
-    if(!g_Facebook.m_FBApp)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-
-    lua_newtable(L);
-
-    JNIEnv* env = Attach();
-
-    env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_IterateMe, (jlong)L);
 
     if (!Detach(env))
     {
@@ -797,9 +670,7 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
         jclass fb_class = (jclass)env->CallObjectMethod(cls, find_class, str_class_name);
         env->DeleteLocalRef(str_class_name);
 
-        g_Facebook.m_Login = env->GetMethodID(fb_class, "login", "(J)V");
         g_Facebook.m_Logout = env->GetMethodID(fb_class, "logout", "()V");
-        g_Facebook.m_IterateMe = env->GetMethodID(fb_class, "iterateMe", "(J)V");
         g_Facebook.m_IteratePermissions = env->GetMethodID(fb_class, "iteratePermissions", "(J)V");
         g_Facebook.m_GetAccessToken = env->GetMethodID(fb_class, "getAccessToken", "()Ljava/lang/String;");
         g_Facebook.m_RequestReadPermissions = env->GetMethodID(fb_class, "requestReadPermissions", "(JLjava/lang/String;)V");

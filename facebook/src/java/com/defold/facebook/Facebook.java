@@ -110,11 +110,6 @@ public class Facebook implements Handler.Callback {
         activity.startActivity(intent);
     }
 
-    public void login(StateCallback cb) {
-        this.stateCallback = cb;
-        startActivity(ACTION_LOGIN);
-    }
-
     public void logout() {
         if (AccessToken.getCurrentAccessToken() != null) {
             LoginManager.getInstance().logOut();
@@ -129,10 +124,6 @@ public class Facebook implements Handler.Callback {
             return AccessToken.getCurrentAccessToken().getToken();
         }
         return null;
-    }
-
-    public Map<String, String> getMe() {
-        return this.me;
     }
 
     public List<String> getPermissions() {

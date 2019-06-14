@@ -90,13 +90,9 @@ static int Facebook_LoginWithReadPermissions(lua_State* L)
 
 static const luaL_reg Facebook_methods[] =
 {
-    {"login", Facebook_Login},
     {"logout", Facebook_Logout},
     {"access_token", Facebook_AccessToken},
     {"permissions", Facebook_Permissions},
-    {"request_read_permissions", Facebook_RequestReadPermissions},
-    {"request_publish_permissions", Facebook_RequestPublishPermissions},
-    {"me", Facebook_Me},
     {"post_event", Facebook_PostEvent},
     {"enable_event_usage", Facebook_EnableEventUsage},
     {"disable_event_usage", Facebook_DisableEventUsage},

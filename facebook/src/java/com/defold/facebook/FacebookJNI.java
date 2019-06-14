@@ -184,30 +184,6 @@ class FacebookJNI {
         this.facebook = new Facebook(this.activity, appId);
     }
 
-    public void login(final long userData) {
-        Log.d(TAG, "login");
-        this.activity.runOnUiThread( new Runnable() {
-
-            @Override
-            public void run() {
-                Log.d(TAG, "java jni thread: " + Thread.currentThread().getId());
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-                    onLogin(userData, 6, "Not supported, Android SDK too old.");
-                } else {
-                    facebook.login( new Facebook.StateCallback() {
-
-                        @Override
-                        public void onDone( final int state, final String error) {
-                            onLogin(userData, state, error);
-                        }
-
-                    });
-                }
-            }
-
-        });
-    }
-
     public void logout() {
         this.activity.runOnUiThread(new Runnable() {
             @Override
@@ -215,15 +191,6 @@ class FacebookJNI {
                 FacebookJNI.this.facebook.logout();
             }
         });
-    }
-
-    public void iterateMe(final long userData) {
-        Map<String, String> me = this.facebook.getMe();
-        if (me != null) {
-            for (Map.Entry<String, String> entry : me.entrySet()) {
-                this.onIterateMeEntry(userData, entry.getKey(), entry.getValue());
-            }
-        }
     }
 
     public void iteratePermissions(final long userData) {

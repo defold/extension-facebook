@@ -136,65 +136,6 @@ var LibraryFacebook = {
             console.error("Limiting Facebook Analytics is not supported for Canvas");
         },
 
-        // https://developers.facebook.com/docs/reference/javascript/FB.login/v2.0
-        dmFacebookDoLogin: function(state_open, state_closed, state_failed, callback, lua_state) {
-
-            var chainedUpdateMeAndPermissions = function() {
-                // request user and permissions data, need to store this on the C side
-                window._dmFacebookUpdateMe(function(e, me_data) {
-                    if (e == 0) {
-                        window._dmFacebookUpdatePermissions(function(e, permissions_data) {
-                            if (e == 0) {
-                                var me_buf = allocate(intArrayFromString(me_data), 'i8', ALLOC_STACK);
-                                var permissions_buf = allocate(intArrayFromString(permissions_data), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viiiii', callback, [lua_state, state_open, 0, me_buf, permissions_buf]);
-                            } else {
-                                var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viiiii', callback, [lua_state, state_failed, err_buf, 0, 0]);
-                            }
-                        });
-                    } else {
-                        var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viiiii', callback, [lua_state, state_failed, err_buf, 0, 0]);
-                    }
-                });
-            }
-
-            try {
-
-                FB.getLoginStatus(function(response) {
-
-                    // The user might login with JS outside Defold,
-                    // then we only need to update the me-table and
-                    // permissions list.
-                    if (response.status === 'connected') {
-                        chainedUpdateMeAndPermissions();
-                    } else {
-
-                        FB.login(function(response) {
-                            var e = (response && response.error ? response.error.message : 0);
-                            if (e == 0 && response.authResponse) {
-
-                                chainedUpdateMeAndPermissions();
-
-                            } else if (e != 0) {
-                                var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viiiii', callback, [lua_state, state_closed, err_buf, 0, 0]);
-                            } else {
-                                // No authResponse. Below text is from facebook's own example of this case.
-                                e = 'User cancelled login or did not fully authorize.';
-                                var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viiiii', callback, [lua_state, state_failed, err_buf, 0, 0]);
-                            }
-                        }, {scope: 'public_profile,user_friends'});
-
-                    }
-                });
-            } catch (e) {
-                console.error("Facebook login failed " + e);
-            }
-        },
-
         dmFacebookDoLogout: function() {
             try {
                 FB.logout(function(response) {
@@ -234,7 +175,7 @@ var LibraryFacebook = {
             }
         },
 
-        // https://developers.facebook.com/docs/reference/javascript/FB.login/v2.0
+        // https://developers.facebook.com/docs/reference/javascript/FB.login/v3.3
         // https://developers.facebook.com/docs/facebook-login/permissions/v2.0
         dmFacebookRequestReadPermissions: function(permissions, callback, lua_state) {
             try {
@@ -269,7 +210,7 @@ var LibraryFacebook = {
 
         },
 
-        // https://developers.facebook.com/docs/reference/javascript/FB.login/v2.0
+        // https://developers.facebook.com/docs/reference/javascript/FB.login/v3.3
         // https://developers.facebook.com/docs/facebook-login/permissions/v2.0
         dmFacebookRequestPublishPermissions: function(permissions, audience, callback, lua_state) {
             try {
