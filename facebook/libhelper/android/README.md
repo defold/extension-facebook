@@ -2,11 +2,11 @@
 
 ## Build the .jar file
 
-* Call `gradle build` with only the Android dependencies (see [](build.gradle))
+* Call `gradle build` with only the Android dependencies (see [build.gradle](build.gradle))
 
 * Copy the jar file to `android-support.jar`
 
-* Call `gradle build` with the Facebook dependencies (see [](build.gradle))
+* Call `gradle build` with the Facebook dependencies (see [build.gradle](build.gradle))
 
 ## Repack the .jar file
 
@@ -30,7 +30,7 @@
 
 * Make sure the share/java/<dependency>/res/ files doesn't collide with any in the `android.jar` from the engine
 
-	** http://d.defold.com/archive/__SHA1__/engine/armv7-android/android.jar
+	* `http://d.defold.com/archive/<SHA1>/engine/armv7-android/android.jar`
 
 * Copy the resources to the extension
 
