@@ -32,7 +32,6 @@ struct Facebook
     int m_Callback;
     int m_Self;
     const char* m_appId;
-    const char* m_MeJson;
     const char* m_PermissionsJson;
     bool m_Initialized;
 };
@@ -43,7 +42,6 @@ typedef void (*OnAccessTokenCallback)(void *L, const char* access_token);
 typedef void (*OnPermissionsCallback)(void *L, const char* json_arr);
 typedef void (*OnMeCallback)(void *L, const char* json);
 typedef void (*OnShowDialogCallback)(void* L, const char* url, const char* error);
-typedef void (*OnLoginCallback)(void* L, int state, const char* error, const char* me_json, const char* permissions_json);
 typedef void (*OnRequestReadPermissionsCallback)(void *L, const char* error);
 typedef void (*OnRequestPublishPermissionsCallback)(void *L, const char* error);
 typedef void (*OnLoginWithPermissionsCallback)(void* L, int status, const char* error, const char* permissions_json);
@@ -55,10 +53,8 @@ extern "C" {
     void dmFacebookPermissions(OnPermissionsCallback callback, lua_State* L);
     void dmFacebookMe(OnMeCallback callback, lua_State* L);
     void dmFacebookShowDialog(const char* params, const char* method, OnShowDialogCallback callback, lua_State* L);
-    void dmFacebookDoLogin(int state_open, int state_closed, int state_failed, OnLoginCallback callback, lua_State* L);
     void dmFacebookDoLogout();
-    void dmFacebookLoginWithPermissions(int state_open, int state_closed, int state_failed,
-        const char* permissions, OnLoginWithPermissionsCallback callback, lua_State* thread);
+    void dmFacebookLoginWithPermissions(int state_open, int state_closed, int state_failed, const char* permissions, OnLoginWithPermissionsCallback callback, lua_State* thread);
     void dmFacebookRequestReadPermissions(const char* permissions, OnRequestReadPermissionsCallback callback, lua_State* L);
     void dmFacebookRequestPublishPermissions(const char* permissions, int audience, OnRequestPublishPermissionsCallback callback, lua_State* L);
     void dmFacebookPostEvent(const char* event, double valueToSum, const char* keys, const char* values);
@@ -190,36 +186,12 @@ static void VerifyCallback(lua_State* L)
 static void OnLoginComplete(void* L, int state, const char* error, const char* me_json, const char* permissions_json)
 {
     dmLogDebug("FB login complete...(%d, %s)", state, error);
-    g_Facebook.m_MeJson = me_json;
     g_Facebook.m_PermissionsJson = permissions_json;
     RunStateCallback((lua_State*)L, state, error);
 }
 
 namespace dmFacebook
 {
-
-int Facebook_Login(lua_State* L)
-{
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    dmLogDebug("Logging in to FB...");
-    luaL_checktype(L, 1, LUA_TFUNCTION);
-    lua_pushvalue(L, 1);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmFacebookDoLogin(dmFacebook::STATE_OPEN, dmFacebook::STATE_CLOSED, dmFacebook::STATE_CLOSED_LOGIN_FAILED, (OnLoginCallback) OnLoginComplete, dmScript::GetMainThread(L));
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
 
 int Facebook_Logout(lua_State* L)
 {
@@ -232,9 +204,6 @@ int Facebook_Logout(lua_State* L)
 
     dmFacebookDoLogout();
 
-    if (g_Facebook.m_MeJson) {
-        g_Facebook.m_MeJson = 0;
-    }
     if (g_Facebook.m_PermissionsJson) {
         g_Facebook.m_PermissionsJson = 0;
     }
@@ -248,8 +217,7 @@ bool PlatformFacebookInitialized()
     return !!g_Facebook.m_appId;
 }
 
-static void OnLoginWithPermissions(
-    void* L, int status, const char* error, const char* permissions_json)
+static void OnLoginWithPermissions(void* L, int status, const char* error, const char* permissions_json)
 {
     if (permissions_json != 0x0)
     {
@@ -287,8 +255,7 @@ void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** perm
     // audience either, which means both of these functions has the exact same
     // functionality.
     (void) audience;
-    PlatformFacebookLoginWithReadPermissions(
-        L, permissions, permission_count, callback, context, thread);
+    PlatformFacebookLoginWithReadPermissions(L, permissions, permission_count, callback, context, thread);
 }
 
 
@@ -436,36 +403,6 @@ int Facebook_Permissions(lua_State* L)
     assert(top + 1 == lua_gettop(L));
     return 1;
 }
-
-int Facebook_Me(lua_State* L)
-{
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-
-    if(g_Facebook.m_MeJson != 0)
-    {
-        // Note: this will pass ALL key/values back to lua, not just string types!
-        if (dmFacebook::PushLuaTableFromJson(L, g_Facebook.m_MeJson)) {
-            dmLogError("Failed to parse Facebook_Me response");
-            lua_pushnil(L);
-        }
-    }
-    else
-    {
-        // This follows the iOS implementation...
-        dmLogError("Got empty Facebook_Me response (or FB error).");
-        lua_pushnil(L);
-    }
-
-    assert(top + 1 == lua_gettop(L));
-    return 1;
-}
-
-
-
 
 static void OnShowDialogComplete(void* L, const char* result_json, const char* error)
 {

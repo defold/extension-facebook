@@ -577,42 +577,6 @@ void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** perm
     }
 }
 
-// This function has been deprecated, it is still available but no longer documented.
-int Facebook_Login(lua_State* L)
-{
-    if(!g_Facebook.m_Login)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, 1, LUA_TFUNCTION);
-    lua_pushvalue(L, 1);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-    g_Facebook.m_MainThread = dmScript::GetMainThread(L);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    if ([FBSDKAccessToken currentAccessToken]) {
-        UpdateUserData();
-    } else {
-        // The accesstoken is not aviablale until app activation (this is where m_AccessTokenAvaliable is set), but this function can be called before then.
-        if(g_Facebook.m_AccessTokenAvailable) {
-            // there is no accesstoken, call login
-            g_Facebook.m_AccessTokenRequested = false;
-            DoLogin();
-        } else {
-            // there is no accesstoken avaialble yet, set the request flag so the login (or user data update) can be done in app activation instead
-            g_Facebook.m_AccessTokenRequested = true;
-        }
-    }
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
 int Facebook_Logout(lua_State* L)
 {
     if(!g_Facebook.m_Login)
@@ -628,82 +592,6 @@ int Facebook_Logout(lua_State* L)
 static void RunCallback(lua_State* L, NSError* error)
 {
     RunCallback(L, &g_Facebook.m_Self, &g_Facebook.m_Callback, [error.localizedDescription UTF8String], -1);
-}
-
-// This function has been deprecated, it is still available but no longer documented.
-int Facebook_RequestReadPermissions(lua_State* L)
-{
-    if(!g_Facebook.m_Login)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, 1, LUA_TTABLE);
-    luaL_checktype(L, 2, LUA_TFUNCTION);
-    lua_pushvalue(L, 2);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-    lua_State* main_thread = dmScript::GetMainThread(L);
-
-    NSMutableArray *permissions = [[NSMutableArray alloc] init];
-    AppendArray(L, permissions, 1);
-
-    @try {
-        [g_Facebook.m_Login logInWithReadPermissions: permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-            RunCallback(main_thread, error);
-        }];
-    } @catch (NSException* exception) {
-        NSString* errorMessage = [NSString stringWithFormat:@"Unable to request read permissions: %@", exception.reason];
-        NSMutableDictionary* errorDetail = [NSMutableDictionary dictionary];
-        [errorDetail setValue:errorMessage forKey:NSLocalizedDescriptionKey];
-        RunCallback(L, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
-    }
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
-// This function has been deprecated, it is still available but no longer documented.
-int Facebook_RequestPublishPermissions(lua_State* L)
-{
-    if(!g_Facebook.m_Login)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, 1, LUA_TTABLE);
-    FBSDKDefaultAudience audience = convertDefaultAudience(luaL_checkinteger(L, 2));
-    luaL_checktype(L, 3, LUA_TFUNCTION);
-    lua_pushvalue(L, 3);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-    lua_State* main_thread = dmScript::GetMainThread(L);
-
-    NSMutableArray *permissions = [[NSMutableArray alloc] init];
-    AppendArray(L, permissions, 1);
-
-    @try {
-        [g_Facebook.m_Login setDefaultAudience: audience];
-        [g_Facebook.m_Login logInWithPublishPermissions: permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-            RunCallback(main_thread, error);
-        }];
-    } @catch (NSException* exception) {
-        NSString* errorMessage = [NSString stringWithFormat:@"Unable to request publish permissions: %@", exception.reason];
-        NSMutableDictionary* errorDetail = [NSMutableDictionary dictionary];
-        [errorDetail setValue:errorMessage forKey:NSLocalizedDescriptionKey];
-        RunCallback(L, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
-    }
-
-    assert(top == lua_gettop(L));
-    return 0;
 }
 
 int Facebook_AccessToken(lua_State* L)
@@ -733,33 +621,6 @@ int Facebook_Permissions(lua_State* L)
         lua_pushstring(L, [p UTF8String]);
         lua_rawset(L, -3);
         ++i;
-    }
-
-    assert(top + 1 == lua_gettop(L));
-    return 1;
-}
-
-// This function has been deprecated, it is still available but no longer documented.
-int Facebook_Me(lua_State* L)
-{
-    if(!g_Facebook.m_Login)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-
-    if (g_Facebook.m_Me) {
-        lua_newtable(L);
-        for (id key in g_Facebook.m_Me) {
-            id obj = [g_Facebook.m_Me objectForKey: key];
-            if ([obj isKindOfClass:[NSString class]]) {
-                lua_pushstring(L, [key UTF8String]);
-                lua_pushstring(L, [obj UTF8String]);
-                lua_rawset(L, -3);
-            }
-        }
-    } else {
-        lua_pushnil(L);
     }
 
     assert(top + 1 == lua_gettop(L));

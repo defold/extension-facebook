@@ -3,7 +3,7 @@ name: FacebookExtExternal
 platforms:
     android:
         bundle:
-            aaptExtraPackages: ['com.facebook']
+            aaptExtraPackages: ['com.facebook', 'com.facebook.common']
 
     ios:
         context:

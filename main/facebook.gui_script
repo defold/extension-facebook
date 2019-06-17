@@ -63,6 +63,8 @@ end
 function on_input(self, action_id, action)
 	-- TODO add buttons for game requests
 	
+	-- https://developers.facebook.com/docs/facebook-login/permissions/#reference-default
+
 	self.public_profile = dirtylarry:checkbox("checkbox_public_profile", action_id, action, self.public_profile)
 	self.email = dirtylarry:checkbox("checkbox_email", action_id, action, self.email)
 	self.publish_pages = dirtylarry:checkbox("checkbox_publish_pages", action_id, action, self.publish_pages)

@@ -9,3 +9,6 @@ Thumbs.db
 .cproject
 builtins
 *.pem
+.gradle
+_site
+Gemfile.lock
