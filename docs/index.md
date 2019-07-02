@@ -79,7 +79,7 @@ layout: default
 <code class="inline-code-block">{{ function.returns.type }}</code> {{ function.returns.desc | markdownify }}
 {% endif %}
 
-{{ function.desc | markdownify | replace: "[icon:attention]","<br><br>⚠️" }}
+{{ function.desc | markdownify | replace: "[icon:attention]","<br><br>⚠️" | replace: "[type:string]","<code>string</code>" | replace: "[type:number]","<code>number</code>" | replace: "[type:table]","<code>table</code>" }}
 
 {% if function.examples %}
 <h4>Examples</h4>
