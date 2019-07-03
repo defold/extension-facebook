@@ -4,6 +4,6 @@
 
 # Versions
 
-Stable version: v1.3
+Stable version: v1.4
 
 Upcoming version: v2.0
