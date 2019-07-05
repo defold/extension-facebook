@@ -9,7 +9,7 @@
 
 namespace dmFacebook {
 
-static int Facebook_LoginWithPublishPermissions(lua_State* L)
+static int Facebook_LoginWithPermissions(lua_State* L)
 {
     if (!Platform_FacebookInitialized())
     {
@@ -22,8 +22,7 @@ static int Facebook_LoginWithPublishPermissions(lua_State* L)
     luaL_checktype(L, 3, LUA_TFUNCTION);
 
     char* permissions[128];
-    int permission_count = luaTableToCArray(L, 1, permissions,
-        sizeof(permissions) / sizeof(permissions[0]));
+    int permission_count = luaTableToCArray(L, 1, permissions, sizeof(permissions) / sizeof(permissions[0]));
     if (permission_count == -1)
     {
         return luaL_error(L, "Facebook permissions must be strings");
@@ -39,57 +38,28 @@ static int Facebook_LoginWithPublishPermissions(lua_State* L)
 
     lua_State* thread = dmScript::GetMainThread(L);
 
-    PlatformFacebookLoginWithPublishPermissions(
-        L, (const char**) permissions, permission_count, audience, callback, context, thread);
+    PlatformFacebookLoginWithPermissions(L, (const char**) permissions, permission_count, audience, callback, context, thread);
 
-    for (int i = 0; i < permission_count; ++i)
-    {
+    for (int i = 0; i < permission_count; ++i) {
         free(permissions[i]);
     }
 
     return 0;
 }
 
-static int Facebook_LoginWithReadPermissions(lua_State* L)
+static int Facebook_GetVersion(lua_State* L)
 {
-    if (!Platform_FacebookInitialized())
-    {
-        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
-    }
-
-    DM_LUA_STACK_CHECK(L, 0);
-    luaL_checktype(L, 1, LUA_TTABLE);
-    luaL_checktype(L, 2, LUA_TFUNCTION);
-
-    char* permissions[128];
-    int permission_count = luaTableToCArray(L, 1, permissions,
-        sizeof(permissions) / sizeof(permissions[0]));
-    if (permission_count == -1)
-    {
-        return luaL_error(L, "Facebook permissions must be strings");
-    }
-
-    lua_pushvalue(L, 2);
-    int callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    int context = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    lua_State* thread = dmScript::GetMainThread(L);
-
-    PlatformFacebookLoginWithReadPermissions(
-        L, (const char**) permissions, permission_count, callback, context, thread);
-
-    for (int i = 0; i < permission_count; ++i)
-    {
-        free(permissions[i]);
-    }
-
-    return 0;
+    const char* version = Platform_GetVersion();
+    if (!version)
+        return luaL_error(L, "get_version not supported");
+    lua_pushstring(L, version);
+    free((void*)version);
+    return 1;
 }
 
 static const luaL_reg Facebook_methods[] =
 {
+    {"get_version", Facebook_GetVersion},
     {"logout", Facebook_Logout},
     {"access_token", Facebook_AccessToken},
     {"permissions", Facebook_Permissions},
@@ -97,8 +67,7 @@ static const luaL_reg Facebook_methods[] =
     {"enable_event_usage", Facebook_EnableEventUsage},
     {"disable_event_usage", Facebook_DisableEventUsage},
     {"show_dialog", Facebook_ShowDialog},
-    {"login_with_read_permissions", Facebook_LoginWithReadPermissions},
-    {"login_with_publish_permissions", Facebook_LoginWithPublishPermissions},
+    {"login_with_permissions", Facebook_LoginWithPermissions},
     {0, 0}
 };
 

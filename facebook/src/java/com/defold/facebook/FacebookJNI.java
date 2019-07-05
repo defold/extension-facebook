@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 // A helper class that initializes the facebook sdk, and also activates/deactivates the app
 class FacebookAppJNI {
 
-    private static final String TAG = "defold.facebookapp";
+    private static final String TAG = "defold.facebook";
 
     private Activity activity;
     private String appId;
@@ -107,12 +107,6 @@ class FacebookAppJNI {
 class FacebookJNI {
 
     private static final String TAG = "defold.facebook";
-
-    private native void onLogin(long userData, int state, String error);
-
-    private native void onRequestRead(long userData, String error);
-
-    private native void onRequestPublish(long userData, String error);
 
     private native void onLoginWithPermissions(long userData, int state, String error);
 
@@ -203,7 +197,11 @@ class FacebookJNI {
         return this.facebook.getAccessToken();
     }
 
-    public void loginWithPublishPermissions(final long userData, final int audience, final String permissions) {
+    public String getSdkVersion() {
+        return this.facebook.getSdkVersion();
+    }
+
+    public void loginWithPermissions(final long userData, final int audience, final String permissions) {
         this.activity.runOnUiThread(new Runnable() {
 
             @Override
@@ -221,65 +219,10 @@ class FacebookJNI {
 
                     };
 
-                    facebook.loginWithPublishPermissions(permissions.split(","), audience, callback);
+                    facebook.loginWithPermissions(permissions.split(","), audience, callback);
                 }
             }
 
-        });
-    }
-
-    public void loginWithReadPermissions(final long userData, final String permissions) {
-        this.activity.runOnUiThread(new Runnable() {
-
-            @Override
-            public void run() {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-                    // call cb immediately with failed state
-                    onLoginWithPermissions(userData, 6, "Not supported, Android SDK too old.");
-                } else {
-                    Facebook.LoginCallback callback = new Facebook.LoginCallback() {
-
-                        @Override
-                        public void onDone(final int state, final String error) {
-                            onLoginWithPermissions(userData, state, error);
-                        }
-
-                    };
-
-                    facebook.loginWithReadPermissions(permissions.split(","), callback);
-                }
-            }
-
-        });
-    }
-
-    public void requestReadPermissions(final long userData, final String permissions) {
-        this.activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Facebook.Callback cb = new Facebook.Callback() {
-                    @Override
-                    public void onDone(final String error) {
-                        onRequestRead(userData, error);
-                    }
-                };
-                facebook.requestReadPermissions(permissions.split(","), cb);
-            }
-        });
-    }
-
-    public void requestPublishPermissions(final long userData, final int defaultAudience, final String permissions) {
-        this.activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Facebook.Callback cb = new Facebook.Callback() {
-                    @Override
-                    public void onDone(final String error) {
-                        onRequestRead(userData, error);
-                    }
-                };
-                facebook.requestPubPermissions(defaultAudience, permissions.split(","), cb);
-            }
         });
     }
 

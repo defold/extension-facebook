@@ -12,3 +12,5 @@ builtins
 .gradle
 _site
 Gemfile.lock
+facebook/libhelper/android/build/**
+/bundle-dir

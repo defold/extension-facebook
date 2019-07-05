@@ -47,14 +47,12 @@ struct Facebook
     }
 
     jobject m_FB;
+    jmethodID m_GetSdkVersion;
     jmethodID m_Logout;
     jmethodID m_IteratePermissions;
     jmethodID m_GetAccessToken;
-    jmethodID m_RequestReadPermissions;
-    jmethodID m_RequestPublishPermissions;
     jmethodID m_ShowDialog;
-    jmethodID m_LoginWithPublishPermissions;
-    jmethodID m_LoginWithReadPermissions;
+    jmethodID m_LoginWithPermissions;
 
     jmethodID m_PostEvent;
     jmethodID m_EnableEventUsage;
@@ -354,7 +352,7 @@ bool PlatformFacebookInitialized()
     return !!g_Facebook.m_FBApp;
 }
 
-void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** permissions,
+void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
 {
     // This function must always return so memory for `permissions` can be free'd.
@@ -364,38 +362,11 @@ void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** perm
 
     char cstr_permissions[2048];
     cstr_permissions[0] = 0x0;
-    JoinCStringArray(permissions, permission_count, cstr_permissions,
-        sizeof(cstr_permissions) / sizeof(cstr_permissions[0]), ",");
+    JoinCStringArray(permissions, permission_count, cstr_permissions, sizeof(cstr_permissions) / sizeof(cstr_permissions[0]), ",");
 
     JNIEnv* environment = Attach();
     jstring jstr_permissions = environment->NewStringUTF(cstr_permissions);
-    environment->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_LoginWithPublishPermissions,
-        (jlong) thread, (jint) audience, jstr_permissions);
-    environment->DeleteLocalRef(jstr_permissions);
-
-    if (!Detach(environment))
-    {
-        dmLogError("An unexpected error occurred during Facebook JNI interaction.");
-    }
-}
-
-void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permissions,
-    uint32_t permission_count, int callback, int context, lua_State* thread)
-{
-    // This function must always return so memory for `permissions` can be free'd.
-    VerifyCallback(L);
-    g_Facebook.m_Callback = callback;
-    g_Facebook.m_Self = context;
-
-    char cstr_permissions[2048];
-    cstr_permissions[0] = 0x0;
-    JoinCStringArray(permissions, permission_count, cstr_permissions,
-        sizeof(cstr_permissions) / sizeof(cstr_permissions[0]), ",");
-
-    JNIEnv* environment = Attach();
-    jstring jstr_permissions = environment->NewStringUTF(cstr_permissions);
-    environment->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_LoginWithReadPermissions,
-        (jlong) thread, jstr_permissions);
+    environment->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_LoginWithPermissions, (jlong) thread, (jint) audience, jstr_permissions);
     environment->DeleteLocalRef(jstr_permissions);
 
     if (!Detach(environment))
@@ -584,6 +555,20 @@ int Facebook_ShowDialog(lua_State* L)
 
 } // namespace
 
+const char* Platform_GetVersion()
+{
+    JNIEnv* env = Attach();
+    jstring jSdkVersion = (jstring)env->CallObjectMethod(g_Facebook.m_FB, g_Facebook.m_GetSdkVersion);
+    const char* out = StrDup(env, jSdkVersion);
+    if (!Detach(env))
+    {
+        free((void*)out);
+        out = 0;
+    }
+    return out;
+}
+
+
 bool Platform_FacebookInitialized()
 {
     return g_Facebook.m_FBApp != 0 && g_Facebook.m_FB != 0;
@@ -670,15 +655,13 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
         jclass fb_class = (jclass)env->CallObjectMethod(cls, find_class, str_class_name);
         env->DeleteLocalRef(str_class_name);
 
+        g_Facebook.m_GetSdkVersion = env->GetMethodID(fb_class, "getSdkVersion", "()Ljava/lang/String;");
         g_Facebook.m_Logout = env->GetMethodID(fb_class, "logout", "()V");
         g_Facebook.m_IteratePermissions = env->GetMethodID(fb_class, "iteratePermissions", "(J)V");
         g_Facebook.m_GetAccessToken = env->GetMethodID(fb_class, "getAccessToken", "()Ljava/lang/String;");
-        g_Facebook.m_RequestReadPermissions = env->GetMethodID(fb_class, "requestReadPermissions", "(JLjava/lang/String;)V");
-        g_Facebook.m_RequestPublishPermissions = env->GetMethodID(fb_class, "requestPublishPermissions", "(JILjava/lang/String;)V");
         g_Facebook.m_ShowDialog = env->GetMethodID(fb_class, "showDialog", "(JLjava/lang/String;Ljava/lang/String;)V");
 
-        g_Facebook.m_LoginWithPublishPermissions = env->GetMethodID(fb_class, "loginWithPublishPermissions", "(JILjava/lang/String;)V");
-        g_Facebook.m_LoginWithReadPermissions = env->GetMethodID(fb_class, "loginWithReadPermissions", "(JLjava/lang/String;)V");
+        g_Facebook.m_LoginWithPermissions = env->GetMethodID(fb_class, "loginWithPermissions", "(JILjava/lang/String;)V");
 
         g_Facebook.m_PostEvent = env->GetMethodID(fb_class, "postEvent", "(Ljava/lang/String;D[Ljava/lang/String;[Ljava/lang/String;)V");
         g_Facebook.m_EnableEventUsage = env->GetMethodID(fb_class, "enableEventUsage", "()V");
