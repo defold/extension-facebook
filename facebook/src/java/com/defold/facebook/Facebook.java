@@ -49,8 +49,7 @@ public class Facebook implements Handler.Callback {
     public static final String ACTION_SHOW_DIALOG       = "defold.fb.intent.action.SHOW_DIALOG";
     public static final String ACTION_UPDATE_METABLE    = "defold.fb.intent.action.UPDATE_METABLE";
 
-    public static final String ACTION_LOGIN_WITH_PUBLISH_PERMISSIONS    = "defold.fb.intent.action.LOGIN_WITH_PUBLISH";
-    public static final String ACTION_LOGIN_WITH_READ_PERMISSIONS       = "defold.fb.intent.action.LOGIN_WITH_READ";
+    public static final String ACTION_LOGIN_WITH_PERMISSIONS    = "defold.fb.intent.action.LOGIN_WITH_PERMISSIONS";
 
     private Handler handler;
     private Messenger messenger;
@@ -134,39 +133,14 @@ public class Facebook implements Handler.Callback {
         return Collections.<String> emptyList();
     }
 
-    public void loginWithPublishPermissions(String[] permissions, int audience, LoginCallback callback) {
+    public void loginWithPermissions(String[] permissions, int audience, LoginCallback callback) {
         this.loginCallback = callback;
 
         Bundle extras = new Bundle();
         extras.putInt(INTENT_EXTRA_AUDIENCE, audience);
         extras.putStringArray(INTENT_EXTRA_PERMISSIONS, permissions);
 
-        startActivity(ACTION_LOGIN_WITH_PUBLISH_PERMISSIONS, extras);
-    }
-
-    public void loginWithReadPermissions(String[] permissions, LoginCallback callback) {
-        this.loginCallback = callback;
-
-        Bundle extras = new Bundle();
-        extras.putStringArray(INTENT_EXTRA_PERMISSIONS, permissions);
-
-        startActivity(ACTION_LOGIN_WITH_READ_PERMISSIONS, extras);
-    }
-
-    public void requestReadPermissions(String[] permissions, Callback cb) {
-        this.callback = cb;
-        Bundle extras = new Bundle();
-        extras.putStringArray(INTENT_EXTRA_PERMISSIONS, permissions);
-        startActivity(ACTION_REQ_READ_PERMS, extras);
-    }
-
-    public void requestPubPermissions(int defaultAudience, String[] permissions,
-            Callback cb) {
-        this.callback = cb;
-        Bundle extras = new Bundle();
-        extras.putInt(INTENT_EXTRA_AUDIENCE, defaultAudience);
-        extras.putStringArray(INTENT_EXTRA_PERMISSIONS, permissions);
-        startActivity(ACTION_REQ_PUB_PERMS, extras);
+        startActivity(ACTION_LOGIN_WITH_PERMISSIONS, extras);
     }
 
     public void showDialog(String dialogType, Bundle params, DialogCallback cb) {
@@ -199,6 +173,10 @@ public class Facebook implements Handler.Callback {
         } catch (Throwable throwable) {
             Log.e(TAG, "A critical error occurred while attempting to post event to Facebook Analytics");
         }
+    }
+
+    public String getSdkVersion() {
+        return FacebookSdk.getSdkVersion();
     }
 
     public void disableEventUsage() {
@@ -241,12 +219,8 @@ public class Facebook implements Handler.Callback {
             if (action.equals(ACTION_LOGIN)) {
                 this.stateCallback.onDone(data.getInt(MSG_KEY_STATE), error);
             }
-        } else if (action.equals(ACTION_LOGIN_WITH_READ_PERMISSIONS)
-            || action.equals(ACTION_LOGIN_WITH_PUBLISH_PERMISSIONS)) {
+        } else if (action.equals(ACTION_LOGIN_WITH_PERMISSIONS)) {
             this.loginCallback.onDone(data.getInt(MSG_KEY_STATE), error);
-        } else if (action.equals(ACTION_REQ_READ_PERMS) || action.equals(ACTION_REQ_PUB_PERMS)) {
-            this.callback.onDone(error);
-
         } else if (action.equals(ACTION_SHOW_DIALOG)) {
             this.dialogCallback.onDone(data.getBundle(MSG_KEY_DIALOG_RESULT), error);
         }

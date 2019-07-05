@@ -4,6 +4,41 @@
 
 # Versions
 
-Stable version: v1.4
+Stable version: v1.4 (Facebook SDK 4.7 + Graph API 2.6)
 
-Upcoming version: v2.0
+Upcoming version: v2.0 (Facebook SDK 5.x + Graph API 3.3)
+
+
+# Relevant Facebook documentation links
+
+* [Facebook Login](https://developers.facebook.com/docs/facebook-login)
+
+* [Permissions](https://developers.facebook.com/docs/facebook-login/permissions)
+
+* [Login Best Practices](https://developers.facebook.com/docs/facebook-login/best-practices)
+
+# Changelog
+
+## v2.0
+
+* Added version function
+	* facebook.get_version() -> string, e.g. `5.2.1`
+
+* Added new login function
+	* facebook.login_with_permissions()
+
+* Removed deprecated functions
+	* facebook.me()
+	* facebook.login()
+	* facebook.request_read_permissions()
+	* facebook.request_publish_permissions()
+	* facebook.login_with_read_permissions()
+	* facebook.login_with_publish_permissions()
+
+* Removed support for `appinvite` since it was removed in [FBSDK 4.28](https://developers.facebook.com/blog/post/2017/11/07/changes-developer-offerings/)
+
+* The `"feed"` sharing dialog no longer supports these properties:
+	* `title`
+	* `description`
+	* `picture`
+

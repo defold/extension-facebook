@@ -31,7 +31,6 @@ struct Facebook
     bool m_AccessTokenRequested;
     id<UIApplicationDelegate,
        FBSDKSharingDelegate,
-       FBSDKAppInviteDialogDelegate,
        FBSDKGameRequestDialogDelegate> m_Delegate;
 };
 
@@ -45,9 +44,7 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
 
 // AppDelegate used temporarily to hijack all AppDelegate messages
 // An improvment could be to create generic proxy
-@interface FacebookAppDelegate : NSObject <UIApplicationDelegate,
-    FBSDKSharingDelegate, FBSDKAppInviteDialogDelegate,
-    FBSDKGameRequestDialogDelegate>
+@interface FacebookAppDelegate : NSObject <UIApplicationDelegate, FBSDKSharingDelegate, FBSDKGameRequestDialogDelegate>
 
 - (BOOL)application:(UIApplication *)application
                    openURL:(NSURL *)url
@@ -89,10 +86,13 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         if(g_Facebook.m_AccessTokenRequested) {
             g_Facebook.m_AccessTokenRequested = false;
             if ([FBSDKAccessToken currentAccessToken]) {
-                UpdateUserData();
-            } else {
-                DoLogin();
+                if (![FBSDKAccessToken currentAccessToken].dataAccessExpired) {
+                    UpdateUserData();
+                    return;
+                }
+                dmLogWarning("MAWE: DATA ACCESS EXPIRED! REQUIRING RELOGIN!");
             }
+            DoLogin();
         }
     }
 
@@ -139,23 +139,6 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         NSMutableDictionary *errorDetail = [NSMutableDictionary dictionary];
         [errorDetail setValue:@"Share dialog was cancelled" forKey:NSLocalizedDescriptionKey];
         RunDialogResultCallback(g_Facebook.m_MainThread, 0, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
-    }
-
-    // App invite related methods
-    - (void) appInviteDialog: (FBSDKAppInviteDialog *)appInviteDialog didCompleteWithResults:(NSDictionary *)results {
-        if(!g_Facebook.m_Login)
-        {
-            return;
-        }
-        RunDialogResultCallback(g_Facebook.m_MainThread, results, 0);
-    }
-
-    - (void) appInviteDialog: (FBSDKAppInviteDialog *)appInviteDialog didFailWithError:(NSError *)error {
-        if(!g_Facebook.m_Login)
-        {
-            return;
-        }
-        RunDialogResultCallback(g_Facebook.m_MainThread, 0, error);
     }
 
     // Game request related methods
@@ -429,7 +412,7 @@ static void UpdateUserData()
 static void DoLogin()
 {
     NSMutableArray *permissions = [[NSMutableArray alloc] initWithObjects: @"public_profile", @"email", @"user_friends", nil];
-    [g_Facebook.m_Login logInWithReadPermissions: permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+    [g_Facebook.m_Login logInWithPermissions: permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
         if (error) {
             RunStateCallback(g_Facebook.m_MainThread, dmFacebook::STATE_CLOSED_LOGIN_FAILED, error);
         } else if (result.isCancelled) {
@@ -523,34 +506,7 @@ bool PlatformFacebookInitialized()
     return !!g_Facebook.m_Login;
 }
 
-void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permissions,
-    uint32_t permission_count, int callback, int context, lua_State* thread)
-{
-    // This function must always return so memory for `permissions` can be free'd.
-    VerifyCallback(L);
-    g_Facebook.m_Callback = callback;
-    g_Facebook.m_Self = context;
-
-    NSMutableArray* ns_permissions = [[NSMutableArray alloc] init];
-    for (uint32_t i = 0; i < permission_count; ++i)
-    {
-        const char* permission = permissions[i];
-        [ns_permissions addObject: [NSString stringWithUTF8String: permission]];
-    }
-
-    @try {
-        [g_Facebook.m_Login logInWithReadPermissions: ns_permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error)
-        {
-            PrepareCallback(thread, result, error);
-        }];
-    } @catch (NSException* exception) {
-        NSString* errorMessage = [NSString stringWithFormat:@"Unable to request read permissions: %@", exception.reason];
-        RunCallback(thread, &g_Facebook.m_Self, &g_Facebook.m_Callback,
-            [errorMessage UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
-    }
-}
-
-void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** permissions,
+void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
 {
     // This function must always return so memory for `permissions` can be free'd.
@@ -567,15 +523,16 @@ void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** perm
 
     @try {
         [g_Facebook.m_Login setDefaultAudience: convertDefaultAudience(audience)];
-        [g_Facebook.m_Login logInWithPublishPermissions: ns_permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+        [g_Facebook.m_Login logInWithPermissions: ns_permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
             PrepareCallback(thread, result, error);
         }];
     } @catch (NSException* exception) {
-        NSString* errorMessage = [NSString stringWithFormat:@"Unable to request publish permissions: %@", exception.reason];
+        NSString* errorMessage = [NSString stringWithFormat:@"Unable to request permissions: %@", exception.reason];
         RunCallback(thread, &g_Facebook.m_Self, &g_Facebook.m_Callback,
             [errorMessage UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
     }
 }
+
 
 int Facebook_Logout(lua_State* L)
 {
@@ -600,6 +557,13 @@ int Facebook_AccessToken(lua_State* L)
     {
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
+
+    if ([FBSDKAccessToken currentAccessToken] && [FBSDKAccessToken currentAccessToken].dataAccessExpired) {
+        dmLogWarning("MAWE: DATA ACCESS EXPIRED! REQUIRING RELOGIN!");
+        lua_pushnil(L);
+        return 1;
+    }
+
     const char* token = [[[FBSDKAccessToken currentAccessToken] tokenString] UTF8String];
     lua_pushstring(L, token);
     return 1;
@@ -695,30 +659,12 @@ int Facebook_ShowDialog(lua_State* L)
     if (dialog == dmHashString64("feed")) {
 
         FBSDKShareLinkContent* content = [[FBSDKShareLinkContent alloc] init];
-        content.contentTitle       = GetTableValue(L, 2, @[@"caption", @"title"], LUA_TSTRING);
-        content.contentDescription = GetTableValue(L, 2, @[@"description"], LUA_TSTRING);
-        content.imageURL           = [NSURL URLWithString:GetTableValue(L, 2, @[@"picture"], LUA_TSTRING)];
         content.contentURL         = [NSURL URLWithString:GetTableValue(L, 2, @[@"link"], LUA_TSTRING)];
         content.peopleIDs          = GetTableValue(L, 2, @[@"people_ids"], LUA_TTABLE);
         content.placeID            = GetTableValue(L, 2, @[@"place_id"], LUA_TSTRING);
         content.ref                = GetTableValue(L, 2, @[@"ref"], LUA_TSTRING);
 
         [FBSDKShareDialog showFromViewController:nil withContent:content delegate:g_Facebook.m_Delegate];
-
-    } else if (dialog == dmHashString64("appinvite")) {
-
-        FBSDKAppInviteContent* content = [[FBSDKAppInviteContent alloc] init];
-        content.appLinkURL               = [NSURL URLWithString:GetTableValue(L, 2, @[@"url"], LUA_TSTRING)];
-        content.appInvitePreviewImageURL = [NSURL URLWithString:GetTableValue(L, 2, @[@"preview_image_url"], LUA_TSTRING)];
-
-        @try {
-            [FBSDKAppInviteDialog showFromViewController:nil withContent:content delegate:g_Facebook.m_Delegate];
-        } @catch (NSException* exception) {
-            NSString* errorMessage = [NSString stringWithFormat:@"App invites deprecated: %@", exception.reason];
-            NSMutableDictionary* errorDetail = [NSMutableDictionary dictionary];
-            [errorDetail setValue:errorMessage forKey:NSLocalizedDescriptionKey];
-            RunCallback(L, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
-        }
 
     } else if (dialog == dmHashString64("apprequests") || dialog == dmHashString64("apprequest")) {
 
@@ -761,6 +707,12 @@ int Facebook_ShowDialog(lua_State* L)
 }
 
 } // namespace
+
+const char* Platform_GetVersion()
+{
+    const char* version = (const char*)[[FBSDKSettings sdkVersion] UTF8String];
+    return strdup(version);
+}
 
 bool Platform_FacebookInitialized()
 {

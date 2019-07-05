@@ -98,12 +98,11 @@ namespace dmFacebook {
     int Facebook_DisableEventUsage(lua_State* L);
     int Facebook_ShowDialog(lua_State* L);
 
-    void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permissions,
-        uint32_t permission_count, int callback, int context, lua_State* thread);
-    void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** permissions,
-        uint32_t permission_count, int audience, int callback, int context, lua_State* thread);
+    void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, int callback, int context, lua_State* thread);
 }
 
+// Caller must free the returned memory!
+const char* Platform_GetVersion();
 
 bool Platform_FacebookInitialized();
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id);
