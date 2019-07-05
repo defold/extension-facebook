@@ -2,6 +2,12 @@
 
 [Documentation](https://defold.github.io/extension-facebook)
 
+# Versions
+
+Stable version: v1.4 (Facebook SDK 4.7 + Graph API 2.6)
+
+Upcoming version: v2.0 (Facebook SDK 5.x + Graph API 3.3)
+
 
 # Relevant Facebook documentation links
 
@@ -35,3 +41,4 @@
 	* `title`
 	* `description`
 	* `picture`
+
