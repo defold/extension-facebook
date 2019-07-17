@@ -1,6 +1,7 @@
 var LibraryFacebook = {
         $FBinner: {
-
+            loginTimestamp: -1,
+            needsReauth: false
         },
 
         dmFacebookInitialize: function(app_id, version) {
@@ -15,22 +16,6 @@ var LibraryFacebook = {
                     xfbml      : false,
                     version    : Pointer_stringify(version),
                 });
-
-                window._dmFacebookUpdateMe = function(callback) {
-                    try {
-                        FB.api('/me', 'get', { fields: 'id,name,email,first_name,last_name,link,gender,updated_time' }, function (response) {
-                            var e = (response && response.error ? response.error.message : 0);
-                            if(e == 0) {
-                                var me_data = JSON.stringify(response);
-                                callback(0, me_data);
-                            } else {
-                                callback(e, 0);
-                            }
-                        });
-                    } catch (e){
-                        console.error("Facebook me failed " + e);
-                    }
-                };
 
                 window._dmFacebookUpdatePermissions = function(callback) {
                     try {
@@ -71,6 +56,18 @@ var LibraryFacebook = {
                 var access_token = (response && response.accessToken ? response.accessToken : 0);
 
                 if(access_token != 0) {
+
+                    // Check if data access has expired
+                    if (FBinner.loginTimestamp > 0) {
+                        var currentTimeStamp = (!Date.now ? +new Date() : Date.now());
+                        var delta = (currentTimeStamp - FBinner.loginTimestamp) / 1000;
+                        if (delta >= response.reauthorize_required_in) {
+                            FBinner.needsReauth = true;
+                            Runtime.dynCall('vii', callback, [lua_state, 0]);
+                            return;
+                        }
+                    }
+
                     var buf = allocate(intArrayFromString(access_token), 'i8', ALLOC_STACK);
                     Runtime.dynCall('vii', callback, [lua_state, buf]);
                 } else {
@@ -149,9 +146,18 @@ var LibraryFacebook = {
         dmFacebookLoginWithPermissions: function(
             state_open, state_closed, state_failed, permissions, callback, thread) {
             try {
+                var opts = {scope: Pointer_stringify(permissions)};
+                if (FBinner.needsReauth) {
+                    opts.auth_type = "reauthorize";
+                    FBinner.needsReauth = false;
+                }
+
                 FB.login(function(response) {
                     var error = response && response.error ? response.error.message : 0;
                     if (error == 0 && response.authResponse) {
+
+                        FBinner.loginTimestamp = (!Date.now ? +new Date() : Date.now());
+
                         window._dmFacebookUpdatePermissions(function (_error, _permissions) {
                             if (_error == 0) {
                                 var permissionsbuf = allocate(intArrayFromString(_permissions), 'i8', ALLOC_STACK);
@@ -169,77 +175,9 @@ var LibraryFacebook = {
                         var errbuf = allocate(intArrayFromString(errmsg), 'i8', ALLOC_STACK);
                         Runtime.dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
                     }
-                }, {scope: Pointer_stringify(permissions)});
+                }, opts);
             } catch (error) {
                 console.error("An unexpected error occurred during Facebook JavaScript interaction: " + error);
-            }
-        },
-
-        // https://developers.facebook.com/docs/reference/javascript/FB.login/v3.3
-        // https://developers.facebook.com/docs/facebook-login/permissions/v2.0
-        dmFacebookRequestReadPermissions: function(permissions, callback, lua_state) {
-            try {
-                FB.login(function(response) {
-                    var e = (response && response.error ? response.error.message : 0);
-                    if (e == 0 && response.authResponse) {
-
-                        // update internal permission state
-                        window._dmFacebookUpdatePermissions(function(e, permissions_data) {
-                            if (e == 0) {
-                                var permissions_buf = allocate(intArrayFromString(permissions_data), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viii', callback, [lua_state, 0, permissions_buf]);
-                            } else {
-                                var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viii', callback, [lua_state, err_buf, 0]);
-                            }
-                        });
-
-                    } else if (e != 0) {
-                        var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viii', callback, [lua_state, err_buf, 0]);
-                    } else {
-                        // No authResponse. Below text is from facebook's own example of this case.
-                        e = 'User cancelled login or did not fully authorize.';
-                        var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viii', callback, [lua_state, err_buf, 0]);
-                    }
-                }, {scope: Pointer_stringify(permissions)});
-            } catch (e){
-                console.error("Facebook request read permissions failed " + e);
-            }
-
-        },
-
-        // https://developers.facebook.com/docs/reference/javascript/FB.login/v3.3
-        // https://developers.facebook.com/docs/facebook-login/permissions/v2.0
-        dmFacebookRequestPublishPermissions: function(permissions, audience, callback, lua_state) {
-            try {
-                FB.login(function(response) {
-                    var e = (response && response.error ? response.error.message : 0);
-                    if (e == 0 && response.authResponse) {
-                        // update internal permission state
-                        window._dmFacebookUpdatePermissions(function(e, permissions_data) {
-                            if (e == 0) {
-                                var permissions_buf = allocate(intArrayFromString(permissions_data), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viii', callback, [lua_state, 0, permissions_buf]);
-                            } else {
-                                var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viii', callback, [lua_state, err_buf, 0]);
-                            }
-                        });
-
-                    } else if (e != 0) {
-                        var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viii', callback, [lua_state, err_buf, 0]);
-                    } else {
-                        // No authResponse. Below text is from facebook's own example of this case.
-                        e = 'User cancelled login or did not fully authorize.';
-                        var err_buf = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viii', callback, [lua_state, err_buf, 0]);
-                    }
-                }, {scope: Pointer_stringify(permissions)});
-            } catch (e){
-                console.error("Facebook request publish permissions failed " + e);
             }
         }
 }

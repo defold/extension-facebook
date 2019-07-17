@@ -244,7 +244,13 @@ public class FacebookActivity extends Activity {
         if (action.equals(Facebook.ACTION_LOGIN_WITH_PERMISSIONS)) {
             int audience = extras.getInt(Facebook.INTENT_EXTRA_AUDIENCE);
             LoginManager.getInstance().setDefaultAudience(convertDefaultAudience(audience));
-            LoginManager.getInstance().logInWithPublishPermissions(this, Arrays.asList(permissions));
+
+            // If data access has expired, we reauthorize instead of calling regular login.
+            if (AccessToken.getCurrentAccessToken() != null && AccessToken.getCurrentAccessToken().isDataAccessExpired()) {
+                LoginManager.getInstance().reauthorizeDataAccess(this);
+                return;
+            }
+            LoginManager.getInstance().logIn(this, Arrays.asList(permissions));
         }
     }
 

@@ -39,60 +39,20 @@ struct Facebook
 Facebook g_Facebook;
 
 typedef void (*OnAccessTokenCallback)(void *L, const char* access_token);
-typedef void (*OnPermissionsCallback)(void *L, const char* json_arr);
 typedef void (*OnMeCallback)(void *L, const char* json);
 typedef void (*OnShowDialogCallback)(void* L, const char* url, const char* error);
-typedef void (*OnRequestReadPermissionsCallback)(void *L, const char* error);
-typedef void (*OnRequestPublishPermissionsCallback)(void *L, const char* error);
 typedef void (*OnLoginWithPermissionsCallback)(void* L, int status, const char* error, const char* permissions_json);
 
 extern "C" {
     // Implementation in library_facebook.js
     void dmFacebookInitialize(const char* app_id, const char* version);
     void dmFacebookAccessToken(OnAccessTokenCallback callback, lua_State* L);
-    void dmFacebookPermissions(OnPermissionsCallback callback, lua_State* L);
-    void dmFacebookMe(OnMeCallback callback, lua_State* L);
     void dmFacebookShowDialog(const char* params, const char* method, OnShowDialogCallback callback, lua_State* L);
     void dmFacebookDoLogout();
     void dmFacebookLoginWithPermissions(int state_open, int state_closed, int state_failed, const char* permissions, OnLoginWithPermissionsCallback callback, lua_State* thread);
-    void dmFacebookRequestReadPermissions(const char* permissions, OnRequestReadPermissionsCallback callback, lua_State* L);
-    void dmFacebookRequestPublishPermissions(const char* permissions, int audience, OnRequestPublishPermissionsCallback callback, lua_State* L);
     void dmFacebookPostEvent(const char* event, double valueToSum, const char* keys, const char* values);
     void dmFacebookEnableEventUsage();
     void dmFacebookDisableEventUsage();
-}
-
-static void RunStateCallback(lua_State* L, int state, const char *error)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        int callback = g_Facebook.m_Callback;
-        g_Facebook.m_Callback = LUA_NOREF;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
-
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        lua_pushnumber(L, (lua_Number) state);
-        dmFacebook::PushError(L, error);
-
-        lua_pcall(L, 3, 0, 0);
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
-    } else {
-        dmLogError("No callback set");
-    }
 }
 
 static void RunCallback(lua_State* L, const char *error)
@@ -183,13 +143,6 @@ static void VerifyCallback(lua_State* L)
     }
 }
 
-static void OnLoginComplete(void* L, int state, const char* error, const char* me_json, const char* permissions_json)
-{
-    dmLogDebug("FB login complete...(%d, %s)", state, error);
-    g_Facebook.m_PermissionsJson = permissions_json;
-    RunStateCallback((lua_State*)L, state, error);
-}
-
 namespace dmFacebook
 {
 
@@ -227,10 +180,9 @@ static void OnLoginWithPermissions(void* L, int status, const char* error, const
     RunCallback((lua_State*) L, &g_Facebook.m_Self, &g_Facebook.m_Callback, error, status);
 }
 
-void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permissions,
-    uint32_t permission_count, int callback, int context, lua_State* thread)
+void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions,
+    uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
 {
-    // This function must always return so memory for `permissions` can be free'd.
     VerifyCallback(L);
     g_Facebook.m_Callback = callback;
     g_Facebook.m_Self = context;
@@ -243,30 +195,6 @@ void PlatformFacebookLoginWithReadPermissions(lua_State* L, const char** permiss
     dmFacebookLoginWithPermissions(
         dmFacebook::STATE_OPEN, dmFacebook::STATE_CLOSED, dmFacebook::STATE_CLOSED_LOGIN_FAILED,
         cstr_permissions, (OnLoginWithPermissionsCallback) OnLoginWithPermissions, thread);
-}
-
-void PlatformFacebookLoginWithPublishPermissions(lua_State* L, const char** permissions,
-    uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
-{
-    // This function must always return so memory for `permissions` can be free'd.
-
-    // On HTML5 both loginWithPublishPermissions and loginWithReadPermissions are
-    // regular logins with the permissions as the scope. We're not respecting
-    // audience either, which means both of these functions has the exact same
-    // functionality.
-    (void) audience;
-    PlatformFacebookLoginWithReadPermissions(L, permissions, permission_count, callback, context, thread);
-}
-
-
-
-static void OnRequestReadPermissionsComplete(void* L, const char* error, const char* permissions_json)
-{
-    if (permissions_json != 0)
-    {
-        g_Facebook.m_PermissionsJson = permissions_json;
-    }
-    RunCallback((lua_State*)L, error);
 }
 
 static void AppendArray(lua_State* L, char* buffer, uint32_t buffer_size, int idx)
@@ -284,70 +212,6 @@ static void AppendArray(lua_State* L, char* buffer, uint32_t buffer_size, int id
         lua_pop(L, 1);
     }
 }
-
-int Facebook_RequestReadPermissions(lua_State* L)
-{
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, top-1, LUA_TTABLE);
-    luaL_checktype(L, top, LUA_TFUNCTION);
-    lua_pushvalue(L, top);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    char permissions[512] = { 0 };
-    AppendArray(L, permissions, 512, top-1);
-
-    dmFacebookRequestReadPermissions(permissions, (OnRequestReadPermissionsCallback) OnRequestReadPermissionsComplete, dmScript::GetMainThread(L));
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
-static void OnRequestPublishPermissionsComplete(void* L, const char* error, const char* permissions_json)
-{
-    if (permissions_json != 0)
-    {
-        g_Facebook.m_PermissionsJson = permissions_json;
-    }
-    RunCallback((lua_State*)L, error);
-}
-
-int Facebook_RequestPublishPermissions(lua_State* L)
-{
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
-
-    luaL_checktype(L, top-2, LUA_TTABLE);
-    // Cannot find any doc that implies that audience is used in the javascript sdk...
-    int audience = luaL_checkinteger(L, top-1);
-    luaL_checktype(L, top, LUA_TFUNCTION);
-    lua_pushvalue(L, top);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    char permissions[512] = { 0 };
-    AppendArray(L, permissions, sizeof(permissions), top-2);
-
-    dmFacebookRequestPublishPermissions(permissions, audience, (OnRequestPublishPermissionsCallback) OnRequestPublishPermissionsComplete, dmScript::GetMainThread(L));
-
-    assert(top == lua_gettop(L));
-    return 0;
-}
-
 
 static void OnAccessTokenComplete(void* L, const char* access_token)
 {
@@ -498,6 +362,11 @@ int Facebook_DisableEventUsage(lua_State* L)
 }
 
 } // namespace
+
+const char* Platform_GetVersion()
+{
+    return strdup(dmFacebook::GRAPH_API_VERSION);
+}
 
 bool Platform_FacebookInitialized()
 {
