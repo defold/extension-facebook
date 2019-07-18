@@ -5,7 +5,20 @@ platforms:
         bundle:
             aaptExtraPackages: ['com.facebook', 'com.facebook.common', 'com.facebook.login', 'com.facebook.share']
 
-    ios:
+    armv7-ios:
         context:
             frameworks: ['Security']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
+            linkFlags: ['-ObjC']
+
+    arm64-ios:
+        context:
+            frameworks: ['Security']
+            weakFrameworks: ['Accounts', 'Social', 'AdSupport']
+            linkFlags: ['-ObjC']
+
+    x86_64-ios:
+        context:
+            frameworks: ['Security']
+            weakFrameworks: ['Accounts', 'Social', 'AdSupport']
+            linkFlags: ['-ObjC']
