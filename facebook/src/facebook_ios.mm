@@ -447,7 +447,6 @@ void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions
     if ([FBSDKAccessToken currentAccessToken]) {
         if ([FBSDKAccessToken currentAccessToken].dataAccessExpired) {
             [g_Facebook.m_Login reauthorizeDataAccess:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-                dmLogError("ANDSVE: reauthorizeDataAccess handler called");
                 PrepareCallback(thread, result, error);
             }];
             return;
