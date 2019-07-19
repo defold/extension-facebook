@@ -497,7 +497,6 @@ int Facebook_AccessToken(lua_State* L)
     }
 
     if ([FBSDKAccessToken currentAccessToken] && [FBSDKAccessToken currentAccessToken].dataAccessExpired) {
-        dmLogWarning("MAWE: DATA ACCESS EXPIRED! REQUIRING RELOGIN!");
         lua_pushnil(L);
         return 1;
     }
