@@ -119,7 +119,7 @@ public class Facebook implements Handler.Callback {
     }
 
     public String getAccessToken() {
-        if (AccessToken.getCurrentAccessToken() != null) {
+        if (AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isDataAccessExpired()) {
             return AccessToken.getCurrentAccessToken().getToken();
         }
         return null;
