@@ -15,7 +15,7 @@ layout: default
         {% if item.type contains 'number' %}
         <tr>
             <td><strong>{{ module.name }}.{{ item.name }}</strong></td>
-            <td>{{ item.desc }}</td>
+            <td>{{ item.desc | markdownify | replace: "[icon:attention]","<br><br>⚠️"}}</td>
         </tr>
 
         {% endif %}
@@ -33,7 +33,7 @@ layout: default
     {% for item in module.members %}
         {% if item.type contains 'function' %}
         <tr>
-            <td><a href="#{{ item.name | url_encode }}"><strong>{{ module.name }}.{{ item.name }}</strong></a></td>
+            <td><a href="#{{ item.name | url_encode }}"><strong>{{ module.name }}.{{ item.name }}()</strong></a></td>
             <td>{{ item.desc | truncate: 80 }}</td>
         </tr>
         {% endif %}
@@ -59,13 +59,18 @@ layout: default
     <tbody>
     {% for param in function.parameters %}
         <tr>
-            <td style="text-align: right;"><strong>{{ param.name }}</strong></td>
+            <td style="text-align: right;">
+                <strong>{{ param.name }}</strong>
+                {% if param.optional %}
+                    (optional)
+                {% endif %}
+            </td>
             <td><code>{{ param.type }}</code></td>
             <td>{{ param.desc | markdownify }}
-                {% if param.type == "FUNCTION" %}
+                {% if param.type == "function" %}
                 {% include type-function.md params=param.parameters %}
                 {% endif %}
-                {% if param.type == "TABLE" %}
+                {% if param.type == "table" %}
                 {% include type-table.md fields=param.members %}
                 {% endif %}
             </td>
@@ -75,11 +80,27 @@ layout: default
 </table>
 {% endif %}
 {% if function.returns %}
-<h4>Returns</h4>
-<code class="inline-code-block">{{ function.returns.type }}</code> {{ function.returns.desc | markdownify }}
+    <table>
+        <thead>
+            <tr>
+                <th>Return value</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <h4>Returns</h4>
+            {% for return in function.returns %}
+                <tr>
+                    <td>{{ return.name }}</td>
+                    <td><code class="inline-code-block">{{ return.type }}</code></td>
+                    <td>{{ return.desc | markdownify }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endif %}
-
-{{ function.desc | markdownify | replace: "[icon:attention]","<br><br>⚠️" | replace: "[type:string]","<code class='inline-code-block'>string</code>" | replace: "[type:number]","<code class='inline-code-block'>number</code>" | replace: "[type:table]","<code class='inline-code-block'>table</code>" }}
+{{ function.desc | markdownify | replace: "[icon:attention]","<br><br>⚠️" | replace: "[type:string]","<code class='inline-code-block'>string</code>" | replace: "[type:number]","<code class='inline-code-block'>number</code>" | replace: "[type:table]","<code class='inline-code-block'>table</code>" | markdownify}}
 
 {% if function.examples %}
 <h4>Examples</h4>
