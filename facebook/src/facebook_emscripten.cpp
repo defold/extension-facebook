@@ -499,6 +499,11 @@ int Facebook_DisableEventUsage(lua_State* L)
 
 } // namespace
 
+const char* Platform_GetVersion()
+{
+    return GRAPH_API_VERSION;
+}
+
 bool Platform_FacebookInitialized()
 {
     return g_Facebook.m_Initialized;
