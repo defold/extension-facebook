@@ -17,33 +17,36 @@
           as well as in their [guide to best practices for login management](https://developers.facebook.com/docs/facebook-login/best-practices).
 
     parameters:
-    - name: permissions
-      type: table
-      desc: table with the requested publish permission strings.
-    - name: audience
-      type: number
-      desc: The audience that should be able to see the publications.
-            Can be any of
+      - name: permissions
+        type: table
+        desc: table with the requested publish permission strings.
+      - name: audience
+        type: number
+        desc: The audience that should be able to see the publications.
+              Can be any of
 
-              - `facebook.AUDIENCE_NONE`
-              - `facebook.AUDIENCE_ONLYME`
-              - `facebook.AUDIENCE_FRIENDS`
-              - `facebook.AUDIENCE_EVERYONE`
+                - `facebook.AUDIENCE_NONE`
 
-    - name: callback
-      type: function
-      desc: Callback function that is executed when the permission request dialog is closed.
-      parameters:
-        - name: self
-          type: object
-          desc: The context of the calling script
+                - `facebook.AUDIENCE_ONLYME`
 
-        - name: data
-          type: table
-          desc: A table that contains the response
+                - `facebook.AUDIENCE_FRIENDS`
+
+                - `facebook.AUDIENCE_EVERYONE`
+
+      - name: callback
+        type: function
+        desc: Callback function that is executed when the permission request dialog is closed.
+        parameters:
+          - name: self
+            type: object
+            desc: The context of the calling script
+
+          - name: data
+            type: table
+            desc: A table that contains the response
 
     examples:
-    - desc: |-
+      - desc: |-
             Log in to Facebook with a set of publish permissions
             ```lua
             local permissions = {"publish_actions"}
@@ -89,12 +92,12 @@
           to perform a login to get the wanted permissions.
 
     returns:
-    - name: token
-      type: string
-      desc: the access token or nil if the user is not logged in
+      - name: token
+        type: string
+        desc: the access token or nil if the user is not logged in
 
     examples:
-    - desc: |-
+      - desc: |-
             Get the current access token, then use it to perform a graph API request.
 
             ```lua
@@ -120,12 +123,12 @@
           This function returns a table with all the currently granted permission strings.
 
     returns:
-    - name: permissions
-      type: table
-      desc: The permissions
+      - name: permissions
+        type: table
+        desc: The permissions
 
     examples:
-    - desc: |-
+      - desc: |-
             Check the currently granted permissions for a particular permission
 
             ```lua
@@ -191,7 +194,7 @@
             - `facebook.PARAM_SUCCESS`
 
     examples:
-    - desc: |-
+      - desc: |-
             Post a spent credits event to Facebook Analytics
 
             ```lua
@@ -243,31 +246,31 @@
           Shows a Game Request dialog. Game Requests allows players to invite their friends to play a
           game. Available parameters
 
-              - [type:string] `title`
+                - [type:string] `title`
 
-              - [type:string] `message`
+                - [type:string] `message`
 
-              - [type:number] `action_type`
+                - [type:number] `action_type`
 
-              - [type:number] `filters`
+                - [type:number] `filters`
 
-              - [type:string] `data`
+                - [type:string] `data`
 
-              - [type:string] `object_id`
+                - [type:string] `object_id`
 
-              - [type:table] `suggestions`
+                - [type:table] `suggestions`
 
-              - [type:table] `recipients`
+                - [type:table] `recipients`
 
-              - [type:string] `to`
+                - [type:string] `to`
 
 
 
           On success, the "result" table parameter passed to the callback function will include the following fields
 
-              - [type:string] `request_id`
+                - [type:string] `request_id`
 
-              - [type:table] `to`
+                - [type:table] `to`
 
 
           [Details for each parameter](https://developers.facebook.com/docs/games/services/gamerequests/v2.6#dialogparameters)
@@ -278,25 +281,25 @@
           The Feed Dialog allows people to publish individual stories to their timeline.
 
 
-          - [type:string] `caption`
+                - [type:string] `caption`
 
-          - [type:string] `description`
+                - [type:string] `description`
 
-          - [type:string] `picture`
+                - [type:string] `picture`
 
-          - [type:string] `link`
+                - [type:string] `link`
 
-          - [type:table] `people_ids`
+                - [type:table] `people_ids`
 
-          - [type:string] `place_id`
+                - [type:string] `place_id`
 
-          - [type:string] `ref`
+                - [type:string] `ref`
 
 
 
           On success, the "result" table parameter passed to the callback function will include the following fields
 
-          - [type:string] `post_id`
+                - [type:string] `post_id`
 
 
           [Details for each parameter](https://developers.facebook.com/docs/sharing/reference/feed-dialog/v2.6#params)
@@ -308,43 +311,45 @@
           Note that the `url` parameter
           corresponds to the appLinkURL (iOS) and setAppLinkUrl (Android) properties.
 
-          - [type:string] `url`
+                - [type:string] `url`
 
-          - [type:string] `preview_image`
+                - [type:string] `preview_image`
 
           [Details for each parameter](https://developers.facebook.com/docs/reference/ios/current/class/FBSDKAppInviteContent)
 
     parameters:
-    - name: dialog
-      type: string
-      desc: Dialog to show
-            - `"apprequests"`
-            - `"feed"`
-            - `"appinvite"`
+      - name: dialog
+        type: string
+        desc: Dialog to show
 
-    - name: param
-      type: table
-      desc: table with dialog parameters
+              - `"apprequests"`
 
-    - name: callback
-      type: function
-      desc: Callback function that is called when the dialog is closed.
+              - `"feed"`
 
-      parameters:
-      - name: self
-        type: object
-        desc: The context of the calling script
+              - `"appinvite"`
 
-      - name: result
+      - name: param
         type: table
-        desc: table with dialog specific results. See above.
+        desc: table with dialog parameters
 
-      - name: error
-        type: [table, nil]
-        desc: Error message. If there is no error, `error` is `nil`.
+      - name: callback
+        type: function
+        desc: Callback function that is called when the dialog is closed.
+        parameters:
+          - name: self
+            type: object
+            desc: The context of the calling script
+
+          - name: result
+            type: table
+            desc: table with dialog specific results. See above.
+
+          - name: error
+            type: table
+            desc: Error message. If there is no error, `error` is `nil`.
 
     examples:
-    - desc: |-
+      - desc: |-
             Show a dialog allowing the user to share a post to their timeline
 
             ```lua
