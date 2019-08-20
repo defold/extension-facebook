@@ -22,13 +22,10 @@ struct Facebook
     }
 
     FBSDKLoginManager *m_Login;
-    NSDictionary* m_Me;
     int m_Callback;
     int m_Self;
     int m_DisableFaceBookEvents;
     lua_State* m_MainThread;
-    bool m_AccessTokenAvailable;
-    bool m_AccessTokenRequested;
     id<UIApplicationDelegate,
        FBSDKSharingDelegate,
        FBSDKGameRequestDialogDelegate> m_Delegate;
@@ -36,10 +33,7 @@ struct Facebook
 
 Facebook g_Facebook;
 
-static void UpdateUserData();
-static void DoLogin();
-
-
+static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* error);
 static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* error);
 
 // AppDelegate used temporarily to hijack all AppDelegate messages
@@ -78,21 +72,6 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         if(!g_Facebook.m_DisableFaceBookEvents)
         {
             [FBSDKAppEvents activateApp];
-        }
-
-        // At the point of app activation, the currentAccessToken will be available if present.
-        // If a token has been requested (through a login call), do the login at this point, or just update the userdata if logged in.
-        g_Facebook.m_AccessTokenAvailable = true;
-        if(g_Facebook.m_AccessTokenRequested) {
-            g_Facebook.m_AccessTokenRequested = false;
-            if ([FBSDKAccessToken currentAccessToken]) {
-                if (![FBSDKAccessToken currentAccessToken].dataAccessExpired) {
-                    UpdateUserData();
-                    return;
-                }
-                dmLogWarning("MAWE: DATA ACCESS EXPIRED! REQUIRING RELOGIN!");
-            }
-            DoLogin();
         }
     }
 
@@ -272,6 +251,7 @@ static void VerifyCallback(lua_State* L)
     }
 }
 
+
 static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* error)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
@@ -386,58 +366,6 @@ static void AppendArray(lua_State*L, NSMutableArray* array, int table)
     }
 }
 
-static void UpdateUserData()
-{
-    // Login successfull, now grab user info
-    // In SDK 4+ we explicitly have to set which fields we want,
-    // since earlier SDK versions returned these by default.
-    NSMutableDictionary *params = [NSMutableDictionary dictionary];
-    [params setObject:@"last_name,link,id,gender,email,locale,name,first_name,updated_time" forKey:@"fields"];
-    [[[FBSDKGraphRequest alloc] initWithGraphPath:@"me" parameters:params]
-    startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id graphresult, NSError *error) {
-
-        [g_Facebook.m_Me release];
-        if (!error) {
-            g_Facebook.m_Me = [[NSDictionary alloc] initWithDictionary: graphresult];
-            RunStateCallback(g_Facebook.m_MainThread, dmFacebook::STATE_OPEN, error);
-        } else {
-            g_Facebook.m_Me = nil;
-            dmLogWarning("Failed to fetch user-info: %s", [[error localizedDescription] UTF8String]);
-            RunStateCallback(g_Facebook.m_MainThread, dmFacebook::STATE_CLOSED_LOGIN_FAILED, error);
-        }
-
-    }];
-}
-
-static void DoLogin()
-{
-    NSMutableArray *permissions = [[NSMutableArray alloc] initWithObjects: @"public_profile", @"email", @"user_friends", nil];
-    [g_Facebook.m_Login logInWithPermissions: permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-        if (error) {
-            RunStateCallback(g_Facebook.m_MainThread, dmFacebook::STATE_CLOSED_LOGIN_FAILED, error);
-        } else if (result.isCancelled) {
-            NSMutableDictionary *errorDetail = [NSMutableDictionary dictionary];
-            [errorDetail setValue:@"Login was cancelled" forKey:NSLocalizedDescriptionKey];
-            RunStateCallback(g_Facebook.m_MainThread, dmFacebook::STATE_CLOSED_LOGIN_FAILED, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
-        } else {
-            if ([result.grantedPermissions containsObject:@"public_profile"] &&
-                [result.grantedPermissions containsObject:@"email"] &&
-                [result.grantedPermissions containsObject:@"user_friends"]) {
-
-                UpdateUserData();
-
-            } else {
-                // Note that the user can still be logged in at this point, but with reduced set of permissions.
-                // In order to be consistent with other platforms, we consider this to be a failed login.
-                NSMutableDictionary *errorDetail = [NSMutableDictionary dictionary];
-                [errorDetail setValue:@"Not granted all requested permissions." forKey:NSLocalizedDescriptionKey];
-                RunStateCallback(g_Facebook.m_MainThread, dmFacebook::STATE_CLOSED_LOGIN_FAILED, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
-            }
-        }
-
-    }];
-}
-
 static FBSDKDefaultAudience convertDefaultAudience(int fromLuaInt) {
     switch (fromLuaInt) {
         case 2:
@@ -514,6 +442,17 @@ void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions
     g_Facebook.m_Callback = callback;
     g_Facebook.m_Self = context;
 
+    // Check if there already is a access token, and if it has expired.
+    // In such case we want to reautorize instead of doing a new login.
+    if ([FBSDKAccessToken currentAccessToken]) {
+        if ([FBSDKAccessToken currentAccessToken].dataAccessExpired) {
+            [g_Facebook.m_Login reauthorizeDataAccess:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+                PrepareCallback(thread, result, error);
+            }];
+            return;
+        }
+    }
+
     NSMutableArray* ns_permissions = [[NSMutableArray alloc] init];
     for (uint32_t i = 0; i < permission_count; ++i)
     {
@@ -541,8 +480,6 @@ int Facebook_Logout(lua_State* L)
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
     [g_Facebook.m_Login logOut];
-    [g_Facebook.m_Me release];
-    g_Facebook.m_Me = 0;
     return 0;
 }
 
@@ -559,7 +496,6 @@ int Facebook_AccessToken(lua_State* L)
     }
 
     if ([FBSDKAccessToken currentAccessToken] && [FBSDKAccessToken currentAccessToken].dataAccessExpired) {
-        dmLogWarning("MAWE: DATA ACCESS EXPIRED! REQUIRING RELOGIN!");
         lua_pushnil(L);
         return 1;
     }

@@ -6,74 +6,15 @@
 
 #*****************************************************************************************************
 
-  - name: login_with_read_permissions
-    type: function
-    desc: Login to Facebook and request a set of publish permissions.
-
-          The user is prompted to authorize the application using the login dialog of the specific
-          platform. Even if the user is already logged in to Facebook this function
-          can still be used to request additional publish permissions.
-
-
-          [icon:attention] Note that this function cannot be used to request read permissions.
-          If the application requires both publish and read permissions, individual
-          calls to both [ref:login_with_publish_permissions]
-          and [ref:login_with_read_permissions] has to be made.
-
-
-          A comprehensive list of permissions can be found in the [Facebook permissions](https://developers.facebook.com/docs/facebook-login/permissions) documentation,
-          as well as in their [guide to best practises for login management](https://developers.facebook.com/docs/facebook-login/best-practices).
-
-    parameters:
-      - name: permissions
-        type: table
-        desc: table with the requested read permission strings.
-
-      - name: callback
-        type: function
-        desc: Callback function that is executed when the permission request dialog is closed.
-        parameters:
-          - name: self
-            type: object
-            desc: The context of the calling script
-
-          - name: self
-            type: table
-            desc: The context of the calling script
-
-    examples:
-      - desc: |-
-            Log in to Facebook with a set of read permissions
-            ```lua
-            local permissions = {"public_profile", "email", "user_friends"}
-            facebook.login_with_read_permissions(permissions, function(self, data)
-                if (data.status == facebook.STATE_OPEN and data.error == nil) then
-                    print("Successfully logged into Facebook")
-                    pprint(facebook.permissions())
-                else
-                    print("Failed to get permissions (" .. data.status .. ")")
-                    pprint(data)
-                end
-            end)
-            ```
-
-#*****************************************************************************************************
-
-  - name: login_with_publish_permissions
+  - name: login_with_permissions
     type: function
     desc: Login to Facebook and request a set of publish permissions.
 
           The user is prompted to authorize the application using the login dialog of the specific
           platform. Even if the user is already logged in to Facebook this function can still be used to request additional publish permissions.
 
-
-          [icon:attention] Note that this function cannot be used to request read permissions.
-          If the application requires both publish and read permissions, individual calls to both [ref:login_with_publish_permissions]
-          and [ref:login_with_read_permissions] has to be made.
-
-
           A comprehensive list of permissions can be found in the [Facebook permissions](https://developers.facebook.com/docs/facebook-login/permissions) documentation,
-          as well as in their [guide to best practises for login management](https://developers.facebook.com/docs/facebook-login/best-practices).
+          as well as in their [guide to best practices for login management](https://developers.facebook.com/docs/facebook-login/best-practices).
 
     parameters:
       - name: permissions
@@ -109,7 +50,21 @@
             Log in to Facebook with a set of publish permissions
             ```lua
             local permissions = {"publish_actions"}
-            facebook.login_with_publish_permissions(permissions, facebook.AUDIENCE_FRIENDS, function(self, data)
+            facebook.login_with_permissions(permissions, facebook.AUDIENCE_FRIENDS, function(self, data)
+                if (data.status == facebook.STATE_OPEN and data.error == nil) then
+                    print("Successfully logged into Facebook")
+                    pprint(facebook.permissions())
+                else
+                    print("Failed to get permissions (" .. data.status .. ")")
+                    pprint(data)
+                end
+            end)
+            ```
+
+            Log in to Facebook with a set of read permissions
+            ```lua
+            local permissions = {"public_profile", "email", "user_friends"}
+            facebook.login_with_read_permissions(permissions, facebook.AUDIENCE_EVERYONE, function(self, data)
                 if (data.status == facebook.STATE_OPEN and data.error == nil) then
                     print("Successfully logged into Facebook")
                     pprint(facebook.permissions())
@@ -133,7 +88,7 @@
     desc: Get the current Facebook access token.
 
           This function returns the currently stored access token after a previous
-          sucessful login. If it returns nil no access token exists and you need
+          successful login. If it returns nil no access token exists and you need
           to perform a login to get the wanted permissions.
 
     returns:
@@ -185,7 +140,6 @@
             end
             ```
 
-
 #*****************************************************************************************************
 
   - name: post_event
@@ -195,80 +149,49 @@
           This function will post an event to Facebook Analytics where it can be used in the Facebook Insights system.
 
     parameters:
-      - name: event
-        type: [number, string]
-        desc: An event can either be one of the predefined constants below or a text string
-              which can be used to define a custom event that is registered with Facebook Analytics.
+    - name: event
+      type: [number, string]
+      desc: An event can either be one of the predefined constants below or a text string
+            which can be used to define a custom event that is registered with Facebook Analytics.
 
-              - `facebook.EVENT_ACHIEVED_LEVEL`
+            - `facebook.EVENT_ACHIEVED_LEVEL`
+            - `facebook.EVENT_ADDED_PAYMENT_INFO`
+            - `facebook.EVENT_ADDED_TO_CART`
+            - `facebook.EVENT_ADDED_TO_WISHLIST`
+            - `facebook.EVENT_COMPLETED_REGISTRATION`
+            - `facebook.EVENT_COMPLETED_TUTORIAL`
+            - `facebook.EVENT_INITIATED_CHECKOUT`
+            - `facebook.EVENT_PURCHASED`
+            - `facebook.EVENT_RATED`
+            - `facebook.EVENT_SEARCHED`
+            - `facebook.EVENT_SPENT_CREDITS`
+            - `facebook.EVENT_TIME_BETWEEN_SESSIONS`
+            - `facebook.EVENT_UNLOCKED_ACHIEVEMENT`
+            - `facebook.EVENT_VIEWED_CONTENT`
 
-              - `facebook.EVENT_ACTIVATED_APP`
+    - name: value
+      type: number
+      desc: A numeric value for the event. This should represent the value of the event, such as the level achieved,
+            price for an item or number of orcs killed.
 
-              - `facebook.EVENT_ADDED_PAYMENT_INFO`
+    - name: params
+      type: table
+      optional: true
+      desc: Optional table with parameters and their values. A key in the table can
+            either be one of the predefined constants below or a text which can be used to define a custom parameter.
 
-              - `facebook.EVENT_ADDED_TO_CART`
-
-              - `facebook.EVENT_ADDED_TO_WISHLIST`
-
-              - `facebook.EVENT_COMPLETED_REGISTRATION`
-
-              - `facebook.EVENT_COMPLETED_TUTORIAL`
-
-              - `facebook.EVENT_DEACTIVATED_APP`
-
-              - `facebook.EVENT_INITIATED_CHECKOUT`
-
-              - `facebook.EVENT_PURCHASED`
-
-              - `facebook.EVENT_RATED`
-
-              - `facebook.EVENT_SEARCHED`
-
-              - `facebook.EVENT_SESSION_INTERRUPTIONS`
-
-              - `facebook.EVENT_SPENT_CREDITS`
-
-              - `facebook.EVENT_TIME_BETWEEN_SESSIONS`
-
-              - `facebook.EVENT_UNLOCKED_ACHIEVEMENT`
-
-              - `facebook.EVENT_VIEWED_CONTENT`
-
-      - name: value
-        type: number
-        desc: A numeric value for the event. This should represent the value of the event, such as the level achieved,
-              price for an item or number of orcs killed.
-
-    parameters:
-      - name: params
-        type: table
-        optional: true
-        desc: Optional table with parameters and their values. A key in the table can
-              either be one of the predefined constants below or a text which can be used to define a custom parameter.
-
-                - `facebook.PARAM_CONTENT_ID`
-
-                - `facebook.PARAM_CONTENT_TYPE`
-
-                - `facebook.PARAM_CURRENCY`
-
-                - `facebook.PARAM_DESCRIPTION`
-
-                - `facebook.PARAM_LEVEL`
-
-                - `facebook.PARAM_MAX_RATING_VALUE`
-
-                - `facebook.PARAM_NUM_ITEMS`
-
-                - `facebook.PARAM_PAYMENT_INFO_AVAILABLE`
-
-                - `facebook.PARAM_REGISTRATION_METHOD`
-
-                - `facebook.PARAM_SEARCH_STRING`
-
-                - `facebook.PARAM_SOURCE_APPLICATION`
-
-                - `facebook.PARAM_SUCCESS`
+            - `facebook.PARAM_CONTENT_ID`
+            - `facebook.PARAM_CONTENT_TYPE`
+            - `facebook.PARAM_CURRENCY`
+            - `facebook.PARAM_DESCRIPTION`
+            - `facebook.PARAM_LEVEL`
+            - `facebook.PARAM_MAX_RATING_VALUE`
+            - `facebook.PARAM_NUM_ITEMS`
+            - `facebook.PARAM_PAYMENT_INFO_AVAILABLE`
+            - `facebook.PARAM_REGISTRATION_METHOD`
+            - `facebook.PARAM_SEARCH_STRING`
+            - `facebook.PARAM_SOURCE_APPLICATION`
+            - `facebook.PARAM_SUCCESS`
 
     examples:
       - desc: |-
@@ -446,6 +369,17 @@
 
 #*****************************************************************************************************
 
+  - name: get_version
+    type: function
+    desc: Get the version of the Facebook SDK used by the extension.
+
+    returns:
+    - name: version
+      type: string
+      desc: The Facebook SDK version
+
+#*****************************************************************************************************
+
   - name: STATE_OPEN
     type: number
     desc: The Facebook login session is open
@@ -481,6 +415,10 @@
   - name: GAMEREQUEST_FILTER_APPNONUSERS
     type: number
     desc: Game request filter type "app_non_users" for "apprequests" dialog
+
+  - name: EVENT_ACHIEVED_LEVEL
+    type: number
+    desc: Log this event when the user has achieved a level
 
   - name: EVENT_ADDED_PAYMENT_INFO
     type: number
@@ -526,10 +464,7 @@
   - name: EVENT_SPENT_CREDITS
     type: number
     desc: Log this event when the user has spent app credits
-
           The value_to_sum passed to facebook.post_event should be the number of credits spent.
-
-          [icon:attention] This event is currently an undocumented event in the Facebook SDK.
 
   - name: EVENT_TIME_BETWEEN_SESSIONS
     type: number
