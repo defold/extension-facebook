@@ -688,7 +688,7 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
 
 dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 {
-    if( !g_Facebook.m_FBApp )
+    if( !g_Facebook.m_FBApp || g_Facebook.m_CmdQueue.Empty() )
     {
         return dmExtension::RESULT_OK;
     }
@@ -731,6 +731,7 @@ dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 
             g_Facebook.m_CmdQueue.EraseSwap(i--);
         }
+        g_Facebook.m_CmdQueue.SetSize(0);
     }
     return dmExtension::RESULT_OK;
 }
