@@ -276,7 +276,8 @@ static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* err
 
         int ret = lua_pcall(L, 3, 0, 0);
         if (ret != 0) {
-            dmLogError("Error running facebook callback");
+            dmLogError("Error running facebook callback: %s", lua_tostring(L, -1));
+            lua_pop(L, 1);
         }
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
@@ -344,7 +345,8 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
 
         int ret = lua_pcall(L, 3, 0, 0);
         if (ret != 0) {
-            dmLogError("Error running facebook callback");
+            dmLogError("Error running facebook callback: %s", lua_tostring(L, -1));
+            lua_pop(L, 1);
         }
         assert(top == lua_gettop(L));
         dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
