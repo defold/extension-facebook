@@ -728,8 +728,6 @@ dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
                 free((void*)cmd.m_Error);
                 cmd.m_Error = 0x0;
             }
-
-            g_Facebook.m_CmdQueue.EraseSwap(i--);
         }
         g_Facebook.m_CmdQueue.SetSize(0);
     }
