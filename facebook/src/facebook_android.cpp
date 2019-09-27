@@ -24,11 +24,11 @@ extern struct android_app* g_AndroidApp;
 #define CMD_DIALOG_COMPLETE        (4)
 #define CMD_LOGIN_WITH_PERMISSIONS (5)
 
-struct Command
+struct FacebookCommand
 {
-    Command()
+    FacebookCommand()
     {
-        memset(this, 0, sizeof(Command));
+        memset(this, 0, sizeof(FacebookCommand));
     }
     uint8_t m_Type;
     uint16_t m_State;
@@ -68,13 +68,13 @@ struct Facebook
     int m_DisableFaceBookEvents;
 
     dmMutex::HMutex m_Mutex;
-    dmArray<Command> m_CmdQueue;
+    dmArray<FacebookCommand> m_CmdQueue;
 };
 
-Facebook g_Facebook;
+static Facebook g_Facebook;
 
 
-static void RunStateCallback(Command* cmd)
+static void RunStateCallback(FacebookCommand* cmd)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
         lua_State* L = cmd->m_L;
@@ -113,7 +113,7 @@ static void RunStateCallback(Command* cmd)
     }
 }
 
-static void RunDialogResultCallback(Command* cmd)
+static void RunDialogResultCallback(FacebookCommand* cmd)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
         lua_State* L = cmd->m_L;
@@ -168,7 +168,7 @@ static void RunDialogResultCallback(Command* cmd)
     }
 }
 
-static void QueueCommand(Command* cmd)
+static void QueueCommand(FacebookCommand* cmd)
 {
     dmMutex::ScopedLock lk(g_Facebook.m_Mutex);
     if (g_Facebook.m_CmdQueue.Full())
@@ -200,7 +200,7 @@ extern "C" {
 JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onLogin
   (JNIEnv* env, jobject, jlong userData, jint state, jstring error)
 {
-    Command cmd;
+    FacebookCommand cmd;
     cmd.m_Type = CMD_LOGIN;
     cmd.m_State = (int)state;
     cmd.m_L = (lua_State*)userData;
@@ -211,7 +211,7 @@ JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onLogin
 JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onLoginWithPermissions
   (JNIEnv* env, jobject, jlong userData, jint state, jstring error)
 {
-    Command cmd;
+    FacebookCommand cmd;
 
     cmd.m_Type  = CMD_LOGIN_WITH_PERMISSIONS;
     cmd.m_State = (int) state;
@@ -224,7 +224,7 @@ JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onLoginWithPermissio
 JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onRequestRead
   (JNIEnv* env, jobject, jlong userData, jstring error)
 {
-    Command cmd;
+    FacebookCommand cmd;
     cmd.m_Type = CMD_REQUEST_READ;
     cmd.m_L = (lua_State*)userData;
     cmd.m_Error = StrDup(env, error);
@@ -234,7 +234,7 @@ JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onRequestRead
 JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onRequestPublish
   (JNIEnv* env, jobject, jlong userData, jstring error)
 {
-    Command cmd;
+    FacebookCommand cmd;
     cmd.m_Type = CMD_REQUEST_PUBLISH;
     cmd.m_L = (lua_State*)userData;
     cmd.m_Error = StrDup(env, error);
@@ -244,7 +244,7 @@ JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onRequestPublish
 JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onDialogComplete
   (JNIEnv *env, jobject, jlong userData, jstring results, jstring error)
 {
-    Command cmd;
+    FacebookCommand cmd;
     cmd.m_Type = CMD_DIALOG_COMPLETE;
     cmd.m_L = (lua_State*)userData;
     cmd.m_Results = StrDup(env, results);
@@ -697,7 +697,7 @@ dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
         dmMutex::ScopedLock lk(g_Facebook.m_Mutex);
         for (uint32_t i = 0; i != g_Facebook.m_CmdQueue.Size(); i++)
         {
-            Command& cmd = g_Facebook.m_CmdQueue[i];
+            FacebookCommand& cmd = g_Facebook.m_CmdQueue[i];
             if (cmd.m_L != params->m_L)
                 continue;
 
