@@ -75,7 +75,7 @@ struct Facebook
     dmArray<FacebookCommand> m_CmdQueue;
 };
 
-Facebook g_Facebook;
+static Facebook g_Facebook;
 
 
 static void RunStateCallback(FacebookCommand* cmd)
