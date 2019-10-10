@@ -23,6 +23,7 @@ extern struct android_app* g_AndroidApp;
 #define CMD_REQUEST_PUBLISH        (3)
 #define CMD_DIALOG_COMPLETE        (4)
 #define CMD_LOGIN_WITH_PERMISSIONS (5)
+#define CMD_DEFERRED_APP_LINK      (6)
 
 struct FacebookCommand
 {
@@ -44,6 +45,8 @@ struct Facebook
         memset(this, 0, sizeof(*this));
         m_Callback = LUA_NOREF;
         m_Self = LUA_NOREF;
+        m_Callback_DeferredAppLink = LUA_NOREF;
+        m_Self_DeferredAppLink = LUA_NOREF;
     }
 
     jobject m_FB;
@@ -53,6 +56,7 @@ struct Facebook
     jmethodID m_GetAccessToken;
     jmethodID m_ShowDialog;
     jmethodID m_LoginWithPermissions;
+    jmethodID m_FetchDeferredAppLink;
 
     jmethodID m_PostEvent;
     jmethodID m_EnableEventUsage;
@@ -67,12 +71,86 @@ struct Facebook
     int m_RefCount;
     int m_DisableFaceBookEvents;
 
+    int m_Callback_DeferredAppLink;
+    int m_Self_DeferredAppLink;
+
     dmMutex::HMutex m_Mutex;
     dmArray<FacebookCommand> m_CmdQueue;
 };
 
 static Facebook g_Facebook;
 
+static void RunDeferredAppLinkCallback(FacebookCommand* cmd)
+{
+    if (g_Facebook.m_Callback_DeferredAppLink != LUA_NOREF) {
+        lua_State* L = cmd->m_L;
+        char*json;
+        if (cmd->m_Error) {
+            lua_pushnil(L);
+            json = (char*)cmd->m_Error;
+        } else {
+            json = (char*)cmd->m_Results;
+        }
+
+        int top = lua_gettop(L);
+
+        int callback = g_Facebook.m_Callback_DeferredAppLink;
+        g_Facebook.m_Callback_DeferredAppLink = LUA_NOREF;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
+
+        // Setup self
+        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self_DeferredAppLink);
+        lua_pushvalue(L, -1);
+        dmScript::SetInstance(L);
+
+        if (!dmScript::IsInstanceValid(L))
+        {
+            dmLogError("Could not run DeferredAppLink callback because the instance has been deleted.");
+            lua_pop(L, 2);
+            assert(top == lua_gettop(L));
+            return;
+        }
+
+        bool is_fail = false;
+        if (json) {
+            dmJson::Document doc;
+            dmJson::Result r = dmJson::Parse(json, &doc);
+            if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
+                char error_str_out[128];
+                if (dmScript::JsonToLua(L, &doc, 0, error_str_out, sizeof(error_str_out)) < 0) {
+                    dmLogError("Failed converting object JSON to Lua; %s", error_str_out);
+                    is_fail = true;
+                }
+            } else {
+                dmLogError("Failed to parse JSON object(%d): (%s)", r, json);
+                is_fail = true;
+            }
+            dmJson::Free(&doc);
+            if (is_fail) {
+                lua_pop(L, 2);
+                assert(top == lua_gettop(L));
+                return;
+            }
+        } else {
+            lua_pushnil(L);
+        }
+        
+        if (!cmd->m_Error) {
+            lua_pushnil(L);
+        }
+
+        int ret = lua_pcall(L, 3, 0, 0);
+        if(ret != 0)
+        {
+            dmLogError("Error running callback: %s", lua_tostring(L, -1));
+            lua_pop(L, 1);
+        }
+        assert(top == lua_gettop(L));
+        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
+    } else {
+        dmLogError("No DeferredAppLink callback set");
+    }
+}
 
 static void RunStateCallback(FacebookCommand* cmd)
 {
@@ -290,6 +368,20 @@ JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onIteratePermissions
         lua_pushnil(L);
     }
     lua_rawset(L, -3);
+}
+
+JNIEXPORT void JNICALL Java_com_defold_facebook_FacebookJNI_onFetchDeferredAppLinkData
+  (JNIEnv* env, jobject, jlong user_data, jstring results, jboolean isError)
+{
+    FacebookCommand cmd;
+    cmd.m_L = (lua_State*)user_data;
+    cmd.m_Type = CMD_DEFERRED_APP_LINK;
+    if (JNI_TRUE == isError) {
+        cmd.m_Error = StrDup(env, results);
+    } else {
+        cmd.m_Results = StrDup(env, results);
+    }
+    QueueCommand(&cmd);
 }
 
 #ifdef __cplusplus
@@ -553,6 +645,21 @@ int Facebook_ShowDialog(lua_State* L)
     return 0;
 }
 
+void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread)
+{
+    VerifyCallback(L);
+    g_Facebook.m_Callback_DeferredAppLink = callback;
+    g_Facebook.m_Self_DeferredAppLink = context;
+
+    JNIEnv* environment = Attach();
+    environment->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_FetchDeferredAppLink, (jlong)thread);
+
+    if (!Detach(environment))
+    {
+        dmLogError("An unexpected error occurred during Facebook JNI interaction.");
+    }
+}
+
 } // namespace
 
 const char* Platform_GetVersion()
@@ -660,6 +767,7 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
         g_Facebook.m_IteratePermissions = env->GetMethodID(fb_class, "iteratePermissions", "(J)V");
         g_Facebook.m_GetAccessToken = env->GetMethodID(fb_class, "getAccessToken", "()Ljava/lang/String;");
         g_Facebook.m_ShowDialog = env->GetMethodID(fb_class, "showDialog", "(JLjava/lang/String;Ljava/lang/String;)V");
+        g_Facebook.m_FetchDeferredAppLink = env->GetMethodID(fb_class, "fetchDeferredAppLinkData", "(J)V");
 
         g_Facebook.m_LoginWithPermissions = env->GetMethodID(fb_class, "loginWithPermissions", "(JILjava/lang/String;)V");
 
@@ -716,6 +824,9 @@ dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
                     break;
                 case CMD_DIALOG_COMPLETE:
                     RunDialogResultCallback(&cmd);
+                    break;
+                case CMD_DEFERRED_APP_LINK:
+                    RunDeferredAppLinkCallback(&cmd);
                     break;
             }
             if (cmd.m_Results != 0x0)

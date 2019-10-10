@@ -19,11 +19,17 @@ struct Facebook
         memset(this, 0, sizeof(*this));
         m_Callback = LUA_NOREF;
         m_Self = LUA_NOREF;
+        m_Callback_DeferredAppLink = LUA_NOREF;
+        m_Self_DeferredAppLink = LUA_NOREF;
     }
 
     FBSDKLoginManager *m_Login;
     int m_Callback;
     int m_Self;
+
+    int m_Callback_DeferredAppLink;
+    int m_Self_DeferredAppLink;
+
     int m_DisableFaceBookEvents;
     lua_State* m_MainThread;
     id<UIApplicationDelegate,

@@ -57,6 +57,21 @@ static int Facebook_GetVersion(lua_State* L)
     return 1;
 }
 
+static int Facebook_FetchDeferredAppLinkData(lua_State* L)
+{
+    lua_pushvalue(L, 1);
+    int callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
+
+    dmScript::GetInstance(L);
+    int context = dmScript::Ref(L, LUA_REGISTRYINDEX);
+
+    lua_State* thread = dmScript::GetMainThread(L);
+
+    Platform_FetchDeferredAppLinkData(L, callback, context, thread);
+    
+    return 1;
+}
+
 static const luaL_reg Facebook_methods[] =
 {
     {"get_version", Facebook_GetVersion},
@@ -68,6 +83,7 @@ static const luaL_reg Facebook_methods[] =
     {"disable_event_usage", Facebook_DisableEventUsage},
     {"show_dialog", Facebook_ShowDialog},
     {"login_with_permissions", Facebook_LoginWithPermissions},
+    {"get_deferred_app_link", Facebook_FetchDeferredAppLinkData},
     {0, 0}
 };
 
