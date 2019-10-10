@@ -83,7 +83,7 @@ static const luaL_reg Facebook_methods[] =
     {"disable_event_usage", Facebook_DisableEventUsage},
     {"show_dialog", Facebook_ShowDialog},
     {"login_with_permissions", Facebook_LoginWithPermissions},
-    {"get_deferred_app_link", Facebook_FetchDeferredAppLinkData},
+    {"get_deferred_deep_link", Facebook_FetchDeferredAppLinkData},
     {0, 0}
 };
 

@@ -70,7 +70,7 @@ nodes {
 nodes {
   position {
     x: 187.5
-    y: 580.0
+    y: 609.0
     z: 0.0
     w: 1.0
   }
@@ -196,7 +196,7 @@ nodes {
 nodes {
   position {
     x: 180.0
-    y: 504.0
+    y: 532.0
     z: 0.0
     w: 1.0
   }
@@ -358,7 +358,7 @@ nodes {
 nodes {
   position {
     x: 248.0
-    y: 506.0
+    y: 534.0
     z: 0.0
     w: 1.0
   }
@@ -519,7 +519,7 @@ nodes {
 nodes {
   position {
     x: 72.0
-    y: 458.0
+    y: 486.0
     z: 0.0
     w: 1.0
   }
@@ -1059,7 +1059,7 @@ nodes {
 nodes {
   position {
     x: 248.0
-    y: 450.0
+    y: 478.0
     z: 0.0
     w: 1.0
   }
@@ -1440,7 +1440,7 @@ nodes {
 nodes {
   position {
     x: 101.0
-    y: 263.0
+    y: 291.0
     z: 0.0
     w: 1.0
   }
@@ -1599,8 +1599,168 @@ nodes {
 }
 nodes {
   position {
+    x: 280.0
+    y: 386.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.4
+    y: 0.4
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 100.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEMPLATE
+  id: "deferredlinkapp"
+  parent: "root"
+  layer: ""
+  inherit_alpha: false
+  alpha: 1.0
+  template: "/dirtylarry/button.gui"
+  template_node_child: false
+}
+nodes {
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 88.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_BOX
+  blend_mode: BLEND_MODE_ALPHA
+  texture: "button/button_normal"
+  id: "deferredlinkapp/larrybutton"
+  xanchor: XANCHOR_NONE
+  yanchor: YANCHOR_NONE
+  pivot: PIVOT_CENTER
+  adjust_mode: ADJUST_MODE_FIT
+  parent: "deferredlinkapp"
+  layer: ""
+  inherit_alpha: true
+  slice9 {
+    x: 32.0
+    y: 32.0
+    z: 32.0
+    w: 32.0
+  }
+  clipping_mode: CLIPPING_MODE_NONE
+  clipping_visible: true
+  clipping_inverted: false
+  alpha: 1.0
+  template_node_child: true
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 100.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  blend_mode: BLEND_MODE_ALPHA
+  text: "Get Def Link App"
+  font: "larryfont"
+  id: "deferredlinkapp/larrylabel"
+  xanchor: XANCHOR_NONE
+  yanchor: YANCHOR_NONE
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  adjust_mode: ADJUST_MODE_FIT
+  line_break: false
+  parent: "deferredlinkapp/larrybutton"
+  layer: ""
+  inherit_alpha: true
+  alpha: 1.0
+  outline_alpha: 1.0
+  shadow_alpha: 1.0
+  overridden_fields: 1
+  overridden_fields: 8
+  template_node_child: true
+  text_leading: 1.0
+  text_tracking: 0.0
+}
+nodes {
+  position {
     x: 101.0
-    y: 313.0
+    y: 341.0
     z: 0.0
     w: 1.0
   }
@@ -1760,7 +1920,7 @@ nodes {
 nodes {
   position {
     x: 280.0
-    y: 263.0
+    y: 291.0
     z: 0.0
     w: 1.0
   }
@@ -1920,7 +2080,7 @@ nodes {
 nodes {
   position {
     x: 280.0
-    y: 313.0
+    y: 341.0
     z: 0.0
     w: 1.0
   }
@@ -2080,7 +2240,7 @@ nodes {
 nodes {
   position {
     x: 25.0
-    y: 218.0
+    y: 271.0
     z: 0.0
     w: 1.0
   }
@@ -2098,7 +2258,7 @@ nodes {
   }
   size {
     x: 800.0
-    y: 100.0
+    y: 200.0
     z: 1.0
     w: 1.0
   }
@@ -2115,7 +2275,7 @@ nodes {
   id: "status"
   xanchor: XANCHOR_NONE
   yanchor: YANCHOR_NONE
-  pivot: PIVOT_W
+  pivot: PIVOT_NW
   outline {
     x: 1.0
     y: 1.0
@@ -2143,7 +2303,7 @@ nodes {
 nodes {
   position {
     x: 25.0
-    y: 193.0
+    y: 192.0
     z: 0.0
     w: 1.0
   }
@@ -2161,7 +2321,7 @@ nodes {
   }
   size {
     x: 800.0
-    y: 150.0
+    y: 200.0
     z: 1.0
     w: 1.0
   }
@@ -2801,166 +2961,6 @@ nodes {
   adjust_mode: ADJUST_MODE_FIT
   line_break: false
   parent: "permissions/larrybutton"
-  layer: ""
-  inherit_alpha: true
-  alpha: 1.0
-  outline_alpha: 1.0
-  shadow_alpha: 1.0
-  overridden_fields: 1
-  overridden_fields: 8
-  template_node_child: true
-  text_leading: 1.0
-  text_tracking: 0.0
-}
-nodes {
-  position {
-    x: 280.0
-    y: 358.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 0.4
-    y: 0.4
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 200.0
-    y: 100.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  type: TYPE_TEMPLATE
-  id: "deferredlinkapp"
-  parent: "root"
-  layer: ""
-  inherit_alpha: false
-  alpha: 1.0
-  template: "/dirtylarry/button.gui"
-  template_node_child: false
-}
-nodes {
-  position {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 300.0
-    y: 88.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  type: TYPE_BOX
-  blend_mode: BLEND_MODE_ALPHA
-  texture: "button/button_normal"
-  id: "deferredlinkapp/larrybutton"
-  xanchor: XANCHOR_NONE
-  yanchor: YANCHOR_NONE
-  pivot: PIVOT_CENTER
-  adjust_mode: ADJUST_MODE_FIT
-  parent: "deferredlinkapp"
-  layer: ""
-  inherit_alpha: true
-  slice9 {
-    x: 32.0
-    y: 32.0
-    z: 32.0
-    w: 32.0
-  }
-  clipping_mode: CLIPPING_MODE_NONE
-  clipping_visible: true
-  clipping_inverted: false
-  alpha: 1.0
-  template_node_child: true
-  size_mode: SIZE_MODE_MANUAL
-}
-nodes {
-  position {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 200.0
-    y: 100.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  type: TYPE_TEXT
-  blend_mode: BLEND_MODE_ALPHA
-  text: "Get Def Link App"
-  font: "larryfont"
-  id: "deferredlinkapp/larrylabel"
-  xanchor: XANCHOR_NONE
-  yanchor: YANCHOR_NONE
-  pivot: PIVOT_CENTER
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  shadow {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  adjust_mode: ADJUST_MODE_FIT
-  line_break: false
-  parent: "deferredlinkapp/larrybutton"
   layer: ""
   inherit_alpha: true
   alpha: 1.0

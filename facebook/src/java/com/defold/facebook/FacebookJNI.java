@@ -307,8 +307,7 @@ class FacebookJNI {
                         data.put("ref", appLinkData.getRef());
                         data.put("target_url", appLinkData.getTargetUri().toString());
                         if (appLinkData.getArgumentBundle() != null) {
-                            data.put("extras", BundleJSONConverter.convertToJSON(
-                                                appLinkData.getArgumentBundle()).toString());
+                            data.put("extras", BundleJSONConverter.convertToJSON(appLinkData.getArgumentBundle()));
                         }
                         message = data.toString();
                     }

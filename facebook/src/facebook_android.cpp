@@ -118,7 +118,7 @@ static void RunDeferredAppLinkCallback(FacebookCommand* cmd)
             if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
                 char error_str_out[128];
                 if (dmScript::JsonToLua(L, &doc, 0, error_str_out, sizeof(error_str_out)) < 0) {
-                    dmLogError("Failed converting object JSON to Lua; %s", error_str_out);
+                    dmLogError("Failed converting object JSON to Lua: %s", error_str_out);
                     is_fail = true;
                 }
             } else {
@@ -134,7 +134,7 @@ static void RunDeferredAppLinkCallback(FacebookCommand* cmd)
         } else {
             lua_pushnil(L);
         }
-        
+
         if (!cmd->m_Error) {
             lua_pushnil(L);
         }
