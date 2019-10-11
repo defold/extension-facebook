@@ -292,32 +292,32 @@ class FacebookJNI {
     }
 
     public void fetchDeferredAppLinkData(final long userData) {
-    AppLinkData.fetchDeferredAppLinkData(this.activity,
-        new AppLinkData.CompletionHandler() {
-            @Override
-            public void onDeferredAppLinkDataFetched(AppLinkData appLinkData) {
-                String message = null;
-                Boolean isError = false;
-                JSONObject data;
-                try {
-                    if (appLinkData == null) {
-                        message ="{}";
-                    } else {
-                        data = new JSONObject();
-                        data.put("ref", appLinkData.getRef());
-                        data.put("target_url", appLinkData.getTargetUri().toString());
-                        if (appLinkData.getArgumentBundle() != null) {
-                            data.put("extras", BundleJSONConverter.convertToJSON(appLinkData.getArgumentBundle()));
+        AppLinkData.fetchDeferredAppLinkData(this.activity,
+            new AppLinkData.CompletionHandler() {
+                @Override
+                public void onDeferredAppLinkDataFetched(AppLinkData appLinkData) {
+                    String message = null;
+                    Boolean isError = false;
+                    JSONObject data;
+                    try {
+                        if (appLinkData == null) {
+                            message ="{}";
+                        } else {
+                            data = new JSONObject();
+                            data.put("ref", appLinkData.getRef());
+                            data.put("target_url", appLinkData.getTargetUri().toString());
+                            if (appLinkData.getArgumentBundle() != null) {
+                                data.put("extras", BundleJSONConverter.convertToJSON(appLinkData.getArgumentBundle()));
+                            }
+                            message = data.toString();
                         }
-                        message = data.toString();
+                    } catch (JSONException e) {
+                        isError = true;
+                        message = "'error':'Error while converting DeferredAppLinkData to JSON:" + e.getMessage()+"'";
                     }
-                } catch (JSONException e) {
-                    isError = true;
-                    message = "'error':'Error while converting DeferredAppLinkData to JSON:" + e.getMessage()+"'";
+                    onFetchDeferredAppLinkData(userData, message, isError);
                 }
-                onFetchDeferredAppLinkData(userData, message, isError);
-            }
-        });
+            });
     }
 
 }

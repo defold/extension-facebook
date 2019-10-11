@@ -59,6 +59,8 @@ static int Facebook_GetVersion(lua_State* L)
 
 static int Facebook_FetchDeferredAppLinkData(lua_State* L)
 {
+    DM_LUA_STACK_CHECK(L, 0);
+
     lua_pushvalue(L, 1);
     int callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
 
@@ -69,7 +71,7 @@ static int Facebook_FetchDeferredAppLinkData(lua_State* L)
 
     Platform_FetchDeferredAppLinkData(L, callback, context, thread);
     
-    return 1;
+    return 0;
 }
 
 static const luaL_reg Facebook_methods[] =

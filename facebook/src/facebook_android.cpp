@@ -575,6 +575,8 @@ int Facebook_ShowDialog(lua_State* L)
 
 void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread)
 {
+    DM_LUA_STACK_CHECK(L, 0);
+    
     VerifyCallback(L);
     g_Facebook.m_Callback_DeferredAppLink = callback;
     g_Facebook.m_Self_DeferredAppLink = context;
@@ -584,7 +586,7 @@ void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, 
 
     if (!Detach(environment))
     {
-        dmLogError("An unexpected error occurred during Facebook JNI interaction.");
+        luaL_error(L, "An unexpected error occurred during Facebook JNI interaction.");
     }
 }
 
