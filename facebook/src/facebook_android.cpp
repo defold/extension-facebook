@@ -80,78 +80,6 @@ struct Facebook
 
 static Facebook g_Facebook;
 
-static void RunDeferredAppLinkCallback(FacebookCommand* cmd)
-{
-    if (g_Facebook.m_Callback_DeferredAppLink != LUA_NOREF) {
-        lua_State* L = cmd->m_L;
-        char*json;
-        if (cmd->m_Error) {
-            lua_pushnil(L);
-            json = (char*)cmd->m_Error;
-        } else {
-            json = (char*)cmd->m_Results;
-        }
-
-        int top = lua_gettop(L);
-
-        int callback = g_Facebook.m_Callback_DeferredAppLink;
-        g_Facebook.m_Callback_DeferredAppLink = LUA_NOREF;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
-
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self_DeferredAppLink);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run DeferredAppLink callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        bool is_fail = false;
-        if (json) {
-            dmJson::Document doc;
-            dmJson::Result r = dmJson::Parse(json, &doc);
-            if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-                char error_str_out[128];
-                if (dmScript::JsonToLua(L, &doc, 0, error_str_out, sizeof(error_str_out)) < 0) {
-                    dmLogError("Failed converting object JSON to Lua: %s", error_str_out);
-                    is_fail = true;
-                }
-            } else {
-                dmLogError("Failed to parse JSON object(%d): (%s)", r, json);
-                is_fail = true;
-            }
-            dmJson::Free(&doc);
-            if (is_fail) {
-                lua_pop(L, 2);
-                assert(top == lua_gettop(L));
-                return;
-            }
-        } else {
-            lua_pushnil(L);
-        }
-
-        if (!cmd->m_Error) {
-            lua_pushnil(L);
-        }
-
-        int ret = lua_pcall(L, 3, 0, 0);
-        if(ret != 0)
-        {
-            dmLogError("Error running callback: %s", lua_tostring(L, -1));
-            lua_pop(L, 1);
-        }
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
-    } else {
-        dmLogError("No DeferredAppLink callback set");
-    }
-}
-
 static void RunStateCallback(FacebookCommand* cmd)
 {
     if (g_Facebook.m_Callback != LUA_NOREF) {
@@ -826,7 +754,7 @@ dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
                     RunDialogResultCallback(&cmd);
                     break;
                 case CMD_DEFERRED_APP_LINK:
-                    RunDeferredAppLinkCallback(&cmd);
+                    dmFacebook::RunDeferredAppLinkCallback(cmd.m_L, &g_Facebook.m_Self_DeferredAppLink, &g_Facebook.m_Callback_DeferredAppLink, (char*)cmd.m_Results, (char*)cmd.m_Error);
                     break;
             }
             if (cmd.m_Results != 0x0)

@@ -143,6 +143,8 @@ namespace dmFacebook {
 
     void RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status);
 
+    void RunDeferredAppLinkCallback(lua_State*L, int* _self, int* _callback, char*result, char*error);
+
     void PushError(lua_State* L, const char* error);
 }
 
