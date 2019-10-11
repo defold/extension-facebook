@@ -17,6 +17,8 @@ import android.os.Bundle;
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.login.DefaultAudience;
+import com.facebook.applinks.AppLinkData;
+import com.facebook.internal.BundleJSONConverter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -115,6 +117,8 @@ class FacebookJNI {
     private native void onIterateMeEntry(long userData, String key, String value);
 
     private native void onIteratePermissionsEntry(long userData, String permission);
+
+    private native void onFetchDeferredAppLinkData(long userData, String results, Boolean isError);
 
     // JSONObject.wrap not available in Java 7,
     // Using https://android.googlesource.com/platform/libcore/+/master/json/src/main/java/org/json/JSONObject.java
@@ -285,6 +289,35 @@ class FacebookJNI {
 
     public void disableEventUsage() {
         facebook.enableEventUsage();
+    }
+
+    public void fetchDeferredAppLinkData(final long userData) {
+        AppLinkData.fetchDeferredAppLinkData(this.activity,
+            new AppLinkData.CompletionHandler() {
+                @Override
+                public void onDeferredAppLinkDataFetched(AppLinkData appLinkData) {
+                    String message = null;
+                    Boolean isError = false;
+                    JSONObject data;
+                    try {
+                        if (appLinkData == null) {
+                            message ="{}";
+                        } else {
+                            data = new JSONObject();
+                            data.put("ref", appLinkData.getRef());
+                            data.put("target_url", appLinkData.getTargetUri().toString());
+                            if (appLinkData.getArgumentBundle() != null) {
+                                data.put("extras", BundleJSONConverter.convertToJSON(appLinkData.getArgumentBundle()));
+                            }
+                            message = data.toString();
+                        }
+                    } catch (JSONException e) {
+                        isError = true;
+                        message = "'error':'Error while converting DeferredAppLinkData to JSON:" + e.getMessage()+"'";
+                    }
+                    onFetchDeferredAppLinkData(userData, message, isError);
+                }
+            });
     }
 
 }

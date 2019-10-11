@@ -19,11 +19,17 @@ struct Facebook
         memset(this, 0, sizeof(*this));
         m_Callback = LUA_NOREF;
         m_Self = LUA_NOREF;
+        m_Callback_DeferredAppLink = LUA_NOREF;
+        m_Self_DeferredAppLink = LUA_NOREF;
     }
 
     FBSDKLoginManager *m_Login;
     int m_Callback;
     int m_Self;
+
+    int m_Callback_DeferredAppLink;
+    int m_Self_DeferredAppLink;
+
     int m_DisableFaceBookEvents;
     lua_State* m_MainThread;
     id<UIApplicationDelegate,
@@ -474,6 +480,54 @@ void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions
     }
 }
 
+void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread)
+{
+    VerifyCallback(L);
+    g_Facebook.m_Callback_DeferredAppLink = callback;
+    g_Facebook.m_Self_DeferredAppLink = context;
+
+    [FBSDKAppLinkUtility fetchDeferredAppLink:^(NSURL *url, NSError *error) {
+        char*errorMsg = 0;
+        char*result = 0;
+        if (error) {
+            NSString *errorMessage =
+                error.userInfo[FBSDKErrorLocalizedDescriptionKey] ?:
+                error.userInfo[FBSDKErrorDeveloperMessageKey] ?:
+                error.localizedDescription;
+            errorMsg = (char*)[errorMessage UTF8String];
+        } else {
+            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+            if (url.absoluteString) {
+                [dict setObject:url.absoluteString forKey:@"ref"];
+                FBSDKURL *parsedUrl = [FBSDKURL URLWithInboundURL:url sourceApplication:nil];
+                if (parsedUrl) {
+                    if (parsedUrl.appLinkExtras) {
+                        [dict setObject:parsedUrl.appLinkExtras forKey:@"extras"];
+                    }
+
+                    if (parsedUrl.targetURL) {
+                        [dict setObject:parsedUrl.targetURL.absoluteString forKey:@"target_url"];
+                    }
+                }
+                    NSError * err;
+                    NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:dict options:0 error:&err];
+                    if (!jsonData && err) {
+                        errorMsg = (char*)[err.localizedDescription UTF8String];
+                    } else {
+                        NSString * jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                        result = (char*)[jsonString UTF8String];
+                    }
+            } else {
+                result = "{}";
+            }
+        }
+        if (errorMsg) {
+            errorMsg = (char*)[NSString stringWithFormat:@"{'error':'%@'}", errorMsg];
+        }
+        dmFacebook::RunDeferredAppLinkCallback(L, &g_Facebook.m_Self_DeferredAppLink, &g_Facebook.m_Callback_DeferredAppLink, result, errorMsg);
+    }];
+    
+}
 
 int Facebook_Logout(lua_State* L)
 {

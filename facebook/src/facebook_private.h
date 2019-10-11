@@ -99,6 +99,7 @@ namespace dmFacebook {
     int Facebook_ShowDialog(lua_State* L);
 
     void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, int callback, int context, lua_State* thread);
+    void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread);
 }
 
 // Caller must free the returned memory!

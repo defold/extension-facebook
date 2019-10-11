@@ -63,6 +63,26 @@ local function fb_share(self, result, error)
 	end
 end
 
+local function deferred_deep_link(self, result, error)
+	print("deferred_deep_link result: ")
+	pprint(result)
+	print("deferred_deep_link error: ")
+	pprint(error)
+	if error then
+		pprint("#################### fb_deferredlinkapp, error: ")
+		pprint(error)
+		gui.set_text(gui.get_node("status"), "deferred_deep_link - ERROR")
+		gui.set_text(gui.get_node("error"), "deferred_deep_link - " .. tostring(error.error))
+	else
+		local str = ""
+		for k, v in pairs(result) do
+			str = str..k..":"..tostring(v)..", "
+		end
+		gui.set_text(gui.get_node("status"), "deferred_deep_link: " .. str)
+		gui.set_text(gui.get_node("error"), "deferred_deep_link - no error")
+	end
+end
+
 function on_input(self, action_id, action)
 	-- TODO add buttons for game requests
 
@@ -158,6 +178,10 @@ function on_input(self, action_id, action)
 			str = str .. tostring(v) .. "\n"
 		end
 		gui.set_text(gui.get_node("status"), str)
+	end)
+
+	dirtylarry:button("deferredlinkapp", action_id, action, function ()
+		facebook.deferred_deep_link(deferred_deep_link)
 	end)
 
 	if facebook and facebook.access_token() then

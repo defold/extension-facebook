@@ -361,6 +361,11 @@ int Facebook_DisableEventUsage(lua_State* L)
     return 0;
 }
 
+void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread)
+{
+    dmLogOnceDebug("get_deferred_app_link() function isn't supported on HTML5 platform");
+}
+
 } // namespace
 
 const char* Platform_GetVersion()
