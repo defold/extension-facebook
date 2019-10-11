@@ -380,6 +380,61 @@
 
 #*****************************************************************************************************
 
+  - name: deferred_deep_link
+    type: function
+    desc: Allows receiving deferred deep link URL and parameters.
+          
+          [More info about Referred Deep Links](https://developers.facebook.com/docs/app-ads/deep-linking/)
+
+    parameters:
+      - name: callback
+        type: function
+        desc: Callback function that is called when information is ready.
+        parameters:
+          - name: self
+            type: object
+            desc: The context of the calling script
+
+          - name: result
+            type: table
+            desc: table with a deferred deep link information
+            members:
+              - name: ref
+                type: string
+                desc: ref for this App Link.
+
+              - name: extras
+                type: table
+                desc: the full set of arguments for this app link. Properties like target uri & ref are typically picked out of this set of arguments.
+                  
+              - name: target_url
+                type: string
+                desc: target uri for this App Link.
+                
+          - name: error
+            type: table
+            desc: Error message. If there is no error, `error` is `nil`.
+
+    examples:
+      - desc: |-
+            Show a dialog allowing the user to share a post to their timeline
+
+            ```lua
+            local function deferred_deep_link_callback(self, result, error)
+              if error then
+                print(error.error)
+              else
+                pprint(result)
+              end
+            end
+
+            function init(self)
+              facebook.deferred_deep_link(deferred_deep_link_callback)
+            end
+            ```
+
+#*****************************************************************************************************
+
   - name: STATE_OPEN
     type: number
     desc: The Facebook login session is open

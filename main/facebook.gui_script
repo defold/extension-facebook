@@ -181,7 +181,7 @@ function on_input(self, action_id, action)
 	end)
 
 	dirtylarry:button("deferredlinkapp", action_id, action, function ()
-		facebook.get_deferred_deep_link(deferred_deep_link)
+		facebook.deferred_deep_link(deferred_deep_link)
 	end)
 
 	if facebook and facebook.access_token() then
