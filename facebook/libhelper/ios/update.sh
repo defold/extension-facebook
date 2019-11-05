@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=v5.2.1
+VERSION=v5.9.0
 FILE=FacebookSDK_Static.zip
 URL=https://github.com/facebook/facebook-objc-sdk/releases/download/$VERSION/$FILE
 TMP=tmpSdk
