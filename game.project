@@ -1,5 +1,5 @@
 [project]
-dependencies = https://github.com/andsve/dirtylarry/archive/master.zip,https://github.com/defold/extension-gps/archive/master.zip
+dependencies = https://github.com/andsve/dirtylarry/archive/master.zip,https://github.com/defold/extension-gps/archive/base-16.0.1.zip
 title = extension-facebook
 
 [bootstrap]

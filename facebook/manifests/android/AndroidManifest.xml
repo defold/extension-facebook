@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{{android.package}}">
-	<uses-sdk android:minSdkVersion="{{android.minimum_sdk_version}}" android:targetSdkVersion="{{android.target_sdk_version}}" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="{{android.package}}">
+    <uses-sdk android:minSdkVersion="{{android.minimum_sdk_version}}" android:targetSdkVersion="{{android.target_sdk_version}}"/>
     <application>
         <meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{{project.title}}" />
-		<activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-        <activity android:name="com.facebook.FacebookActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
-            android:label="{{project.title}}" />
-    </application>
-</manifest>
+        <activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    	<!--com.facebook.core-->
+		<receiver android:exported="false" android:name="com.facebook.CurrentAccessTokenExpirationBroadcastReceiver">
+            <intent-filter>
+                <action android:name="com.facebook.sdk.ACTION_CURRENT_ACCESS_TOKEN_CHANGED"/>
+            </intent-filter>
+        </receiver>
+		<!--com.facebook.core-->
+		<receiver android:exported="true" android:name="com.facebook.CampaignTrackingReceiver" android:permission="android.permission.INSTALL_PACKAGES">
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER"/>
+            </intent-filter>
+        </receiver>
+		<!--com.facebook.core-->
+		<provider android:authorities="{{android.package}}.FacebookInitProvider" android:exported="false" android:name="com.facebook.internal.FacebookInitProvider"/>
+		<!--com.facebook.common-->
+		<activity android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation" android:name="com.facebook.FacebookActivity" android:theme="@style/com_facebook_activity_theme"/>
+		<!--com.facebook.common-->
+		<activity android:name="com.facebook.CustomTabMainActivity"/>
+		<!--com.facebook.common-->
+		<activity android:name="com.facebook.CustomTabActivity"/>
+	</application></manifest>
