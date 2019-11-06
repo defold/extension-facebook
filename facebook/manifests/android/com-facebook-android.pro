@@ -1,7 +1,3 @@
-# FROM:
-# https://github.com/facebook/facebook-android-sdk/blob/master/facebook-login/proguard-rules.pro
-
-
 # Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
 #
 # You are hereby granted a non-exclusive, worldwide, royalty-free license to use,
@@ -52,12 +48,4 @@
 -keepnames class com.facebook.FacebookActivity
 -keepnames class com.facebook.CustomTabActivity
 
--keep class com.facebook.all.All
--keep class com.facebook.core.Core
--keep class com.facebook.login.Login
--keep class com.facebook.share.Share
-
--keep public class com.android.vending.billing.IInAppBillingService {
-    public static com.android.vending.billing.IInAppBillingService asInterface(android.os.IBinder);
-    public android.os.Bundle getSkuDetails(int, java.lang.String, java.lang.String, android.os.Bundle);
-}
+-keep class com.facebook.places.Places
