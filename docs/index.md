@@ -20,7 +20,7 @@ Starting with Defold 1.2.162 this extension has the following dependencies:
 
 ## Source code
 
-The source code can be viewed on [GitHub](https://github.com/defold/extension-facebook)
+The source code is available on [GitHub](https://github.com/defold/extension-facebook)
 
 
 # API reference
