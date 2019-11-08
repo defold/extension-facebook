@@ -1,28 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="{{android.package}}">
-    <uses-sdk android:minSdkVersion="{{android.minimum_sdk_version}}" android:targetSdkVersion="{{android.target_sdk_version}}"/>
-    <application>
+    package="{{android.package}}" >
+
+    <uses-sdk
+        xmlns:tools="http://schemas.android.com/tools"
+        android:minSdkVersion="{{android.minimum_sdk_version}}"
+        android:targetSdkVersion="{{android.target_sdk_version}}" />
+
+    <application
+        xmlns:tools="http://schemas.android.com/tools"
+        android:supportsRtl="true" >
         <meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{{project.title}}" />
         <activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-    	<!--com.facebook.core-->
-		<receiver android:exported="false" android:name="com.facebook.CurrentAccessTokenExpirationBroadcastReceiver">
+        
+        <!--
+         The initialization ContentProvider will call FacebookSdk.sdkInitialize automatically
+         with the application context. This config is merged in with the host app's manifest,
+         but there can only be one provider with the same authority activated at any given
+         point; so if the end user has two or more different apps that use Facebook SDK, only the
+         first one will be able to use the provider. To work around this problem, we use the
+         following placeholder in the authority to identify each host application as if it was
+         a completely different provider.
+        -->
+        <provider
+            android:name="com.facebook.internal.FacebookInitProvider"
+            android:authorities="com.facebook.core.FacebookInitProvider"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.facebook.CurrentAccessTokenExpirationBroadcastReceiver"
+            android:exported="false" >
             <intent-filter>
-                <action android:name="com.facebook.sdk.ACTION_CURRENT_ACCESS_TOKEN_CHANGED"/>
+                <action android:name="com.facebook.sdk.ACTION_CURRENT_ACCESS_TOKEN_CHANGED" />
             </intent-filter>
         </receiver>
-		<!--com.facebook.core-->
-		<receiver android:exported="true" android:name="com.facebook.CampaignTrackingReceiver" android:permission="android.permission.INSTALL_PACKAGES">
+        <receiver
+            android:name="com.facebook.CampaignTrackingReceiver"
+            android:exported="true"
+            android:permission="android.permission.INSTALL_PACKAGES" >
             <intent-filter>
-                <action android:name="com.android.vending.INSTALL_REFERRER"/>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
             </intent-filter>
         </receiver>
-		<!--com.facebook.core-->
-		<provider android:authorities="{{android.package}}.FacebookInitProvider" android:exported="false" android:name="com.facebook.internal.FacebookInitProvider"/>
-		<!--com.facebook.common-->
-		<activity android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation" android:name="com.facebook.FacebookActivity" android:theme="@style/com_facebook_activity_theme"/>
-		<!--com.facebook.common-->
-		<activity android:name="com.facebook.CustomTabMainActivity"/>
-		<!--com.facebook.common-->
-		<activity android:name="com.facebook.CustomTabActivity"/>
-	</application></manifest>
+
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:theme="@style/com_facebook_activity_theme" />
+        <activity android:name="com.facebook.CustomTabMainActivity" />
+        <activity android:name="com.facebook.CustomTabActivity" />
+    </application>
+
+</manifest>
