@@ -1,8 +1,17 @@
 # Facebook extension
 
-Defold native extension for Facebook SDK integration. The extension supports authentication, sharing and analytics.
+Defold [native extension](https://www.defold.com/manuals/extensions/) for Facebook SDK integration. The extension supports authentication, sharing and analytics.
 
-[Documentation](https://defold.github.io/extension-facebook)
+
+## API and installation
+
+[API and setup instructions](https://defold.github.io/extension-facebook)
+
+
+## Manual
+
+[The manual](https://www.defold.com/manuals/facebook/) is available on the official Defold site.
+
 
 # Versions
 
