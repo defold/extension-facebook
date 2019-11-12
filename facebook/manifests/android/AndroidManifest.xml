@@ -24,7 +24,7 @@
         -->
         <provider
             android:name="com.facebook.internal.FacebookInitProvider"
-            android:authorities="com.facebook.core.FacebookInitProvider"
+            android:authorities="{{android.package}}.FacebookInitProvider"
             android:exported="false" />
 
         <receiver
