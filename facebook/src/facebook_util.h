@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <dmsdk/script/script.h>
 
 struct lua_State;
 
@@ -141,9 +142,11 @@ namespace dmFacebook {
 
     int PushLuaTableFromJson(lua_State* L, const char* json);
 
-    void RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status);
+    void RunStatusCallback(dmScript::LuaCallbackInfo* callback, const char* error, int status);
 
-    void RunDeferredAppLinkCallback(lua_State*L, int* _self, int* _callback, char*result, char*error);
+    void RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, const char* jsonresult, const char* error);
+
+    void RunStateCallback(dmScript::LuaCallbackInfo* callback, int state, const char* error);
 
     void PushError(lua_State* L, const char* error);
 }

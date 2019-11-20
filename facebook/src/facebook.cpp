@@ -30,15 +30,9 @@ static int Facebook_LoginWithPermissions(lua_State* L)
 
     int audience = luaL_checkinteger(L, 2);
 
-    lua_pushvalue(L, 3);
-    int callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 3);
 
-    dmScript::GetInstance(L);
-    int context = dmScript::Ref(L, LUA_REGISTRYINDEX);
-
-    lua_State* thread = dmScript::GetMainThread(L);
-
-    PlatformFacebookLoginWithPermissions(L, (const char**) permissions, permission_count, audience, callback, context, thread);
+    Platform_FacebookLoginWithPermissions(L, (const char**) permissions, permission_count, audience, callback);
 
     for (int i = 0; i < permission_count; ++i) {
         free(permissions[i]);
@@ -61,16 +55,10 @@ static int Facebook_FetchDeferredAppLinkData(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
 
-    lua_pushvalue(L, 1);
-    int callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 1);
 
-    dmScript::GetInstance(L);
-    int context = dmScript::Ref(L, LUA_REGISTRYINDEX);
+    Platform_FetchDeferredAppLinkData(L, callback);
 
-    lua_State* thread = dmScript::GetMainThread(L);
-
-    Platform_FetchDeferredAppLinkData(L, callback, context, thread);
-    
     return 0;
 }
 

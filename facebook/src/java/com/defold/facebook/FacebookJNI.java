@@ -212,6 +212,7 @@ class FacebookJNI {
             public void run() {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
                     // call cb immediately with failed state
+                    // STATE_CLOSED_LOGIN_FAILED = 6
                     onLoginWithPermissions(userData, 6, "Not supported, Android SDK too old.");
                 } else {
                     Facebook.LoginCallback callback = new Facebook.LoginCallback() {

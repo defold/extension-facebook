@@ -612,124 +612,99 @@ int dmFacebook::PushLuaTableFromJson(lua_State* L, const char* json)
     return err;
 }
 
-void dmFacebook::RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status)
+void dmFacebook::RunStatusCallback(dmScript::LuaCallbackInfo* callback, const char* error, int status)
 {
-    if (*_callback != LUA_NOREF)
-    {
-        DM_LUA_STACK_CHECK(L, 0);
+    lua_State* L = dmScript::GetCallbackLuaContext(callback);
+    DM_LUA_STACK_CHECK(L, 0);
 
-        lua_rawgeti(L, LUA_REGISTRYINDEX, *_callback);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, *_self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (dmScript::IsInstanceValid(L))
-        {
-            lua_newtable(L);
-
-            if (error != NULL) {
-                lua_pushstring(L, "error");
-                lua_pushstring(L, error);
-                lua_rawset(L, -3);
-            }
-
-            lua_pushstring(L, "status");
-            lua_pushnumber(L, status);
-            lua_rawset(L, -3);
-
-            if (lua_pcall(L, 2, 0, 0) != 0)
-            {
-                dmLogError("Error running facebook callback: %s", lua_tostring(L, -1));
-                lua_pop(L, 1);
-            }
-
-            dmScript::Unref(L, LUA_REGISTRYINDEX, *_callback);
-            dmScript::Unref(L, LUA_REGISTRYINDEX, *_self);
-            *_callback = LUA_NOREF;
-            *_self = LUA_NOREF;
-        }
-        else
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-        }
+    if (!dmScript::SetupCallback(callback)) {
+        return;
     }
-    else
-    {
-        dmLogError("No callback set for facebook");
+
+    lua_newtable(L);
+
+    if (error != NULL) {
+        lua_pushstring(L, error);
+        lua_setfield(L, -2, "error");
     }
+
+    lua_pushnumber(L, status);
+    lua_setfield(L, -2, "status");
+
+    int ret = dmScript::PCall(L, 2, 0);
+    (void)ret;
+
+    dmScript::TeardownCallback(callback);
 }
 
-void dmFacebook::RunDeferredAppLinkCallback(lua_State*L, int* _self, int* _callback, char*result, char*error)
+void dmFacebook::RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, const char* jsonresult, const char* error)
 {
-    if (*_callback != LUA_NOREF) {
-        char*json;
-        if (error) {
-            lua_pushnil(L);
-            json = error;
-        } else {
-            json = result;
-        }
+    lua_State* L = dmScript::GetCallbackLuaContext(callback);
+    DM_LUA_STACK_CHECK(L, 0);
 
-        int top = lua_gettop(L);
+    if (!dmScript::SetupCallback(callback)) {
+        return;
+    }
 
-        int callback = *_callback;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
+    const char* json;
+    if (error) {
+        lua_pushnil(L); // if an error, the result table is nil
+        json = error;
+    } else {
+        json = jsonresult;
+    }
 
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, *_self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run DeferredAppLink callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        bool is_fail = false;
-        if (json) {
-            dmJson::Document doc;
-            dmJson::Result r = dmJson::Parse(json, &doc);
-            if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-                char error_str_out[128];
-                if (dmScript::JsonToLua(L, &doc, 0, error_str_out, sizeof(error_str_out)) < 0) {
-                    dmLogError("Failed converting object JSON to Lua: %s", error_str_out);
-                    is_fail = true;
-                }
-            } else {
-                dmLogError("Failed to parse JSON object(%d): (%s)", r, json);
+    bool is_fail = false;
+    if (json) {
+        dmJson::Document doc;
+        dmJson::Result r = dmJson::Parse(json, &doc);
+        if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
+            char error_str_out[128];
+            if (dmScript::JsonToLua(L, &doc, 0, error_str_out, sizeof(error_str_out)) < 0) {
+                dmLogError("Failed converting object JSON to Lua: %s", error_str_out);
                 is_fail = true;
             }
-            dmJson::Free(&doc);
-            if (is_fail) {
-                lua_pop(L, 2);
-                assert(top == lua_gettop(L));
-                return;
-            }
         } else {
-            lua_pushnil(L);
+            dmLogError("Failed to parse JSON object(%d): (%s)", r, json);
+            is_fail = true;
         }
-
-        if (!error) {
-            lua_pushnil(L);
+        dmJson::Free(&doc);
+        if (is_fail) {
+            lua_pop(L, 2);
+            dmScript::TeardownCallback(callback);
+            return;
         }
-
-        int ret = lua_pcall(L, 3, 0, 0);
-        if(ret != 0)
-        {
-            dmLogError("Error running callback: %s", lua_tostring(L, -1));
-            lua_pop(L, 1);
-        }
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
-        *_callback = LUA_NOREF;
-        *_self = LUA_NOREF;
     } else {
-        dmLogError("No DeferredAppLink callback set");
+        lua_pushnil(L);
     }
+
+    if (!error) {
+        lua_pushnil(L); // if not an error, the error value is nil
+    }
+
+    int ret = dmScript::PCall(L, 3, 0);
+    (void)ret;
+
+    dmScript::TeardownCallback(callback);
+}
+
+// Deprecated. Used for the old "facebook.login()" flow
+void dmFacebook::RunStateCallback(dmScript::LuaCallbackInfo* callback, int state, const char* error)
+{
+    lua_State* L = dmScript::GetCallbackLuaContext(callback);
+    DM_LUA_STACK_CHECK(L, 0);
+
+    if (!dmScript::SetupCallback(callback)) {
+        return;
+    }
+
+    lua_pushnumber(L, (lua_Number) state);
+    dmFacebook::PushError(L, error);
+
+    int ret = dmScript::PCall(L, 3, 0);
+    (void)ret;
+
+    dmScript::TeardownCallback(callback);
 }
 
 void dmFacebook::PushError(lua_State*L, const char* error)
@@ -737,9 +712,8 @@ void dmFacebook::PushError(lua_State*L, const char* error)
     // Could be extended with error codes etc
     if (error != NULL) {
         lua_newtable(L);
-        lua_pushstring(L, "error");
         lua_pushstring(L, error);
-        lua_rawset(L, -3);
+        lua_setfield(L, -2, "error");
     } else {
         lua_pushnil(L);
     }
