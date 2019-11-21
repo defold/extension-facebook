@@ -565,38 +565,9 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
     return dmExtension::RESULT_OK;
 }
 
-static void FacebookHandleCommand(dmFacebook::FacebookCommand* cmd, void* ctx)
-{
-    lua_State* paramsL = (lua_State*)ctx;
-
-    // Checking that we're in the correct context (in case of a non shared Lua state)
-    lua_State* L = dmScript::GetCallbackLuaContext(cmd->m_Callback);
-    if (L != paramsL)
-        return;
-
-    switch (cmd->m_Type)
-    {
-        case dmFacebook::COMMAND_TYPE_LOGIN:
-            dmFacebook::RunStateCallback(cmd->m_Callback, cmd->m_State, cmd->m_Error); // DEPRECATED
-            break;
-        case dmFacebook::COMMAND_TYPE_REQUEST_READ:
-        case dmFacebook::COMMAND_TYPE_REQUEST_PUBLISH:
-        case dmFacebook::COMMAND_TYPE_LOGIN_WITH_PERMISSIONS:
-            dmFacebook::RunStatusCallback(cmd->m_Callback, cmd->m_Error, cmd->m_State);
-            break;
-        case dmFacebook::COMMAND_TYPE_DIALOG_COMPLETE:
-        case dmFacebook::COMMAND_TYPE_DEFERRED_APP_LINK:
-            dmFacebook::RunJsonResultCallback(cmd->m_Callback, cmd->m_Results, cmd->m_Error);
-            break;
-    }
-    free((void*)cmd->m_Results);
-    free((void*)cmd->m_Error);
-    dmScript::DestroyCallback(cmd->m_Callback);
-}
-
 dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 {
-    dmFacebook::QueueFlush(&g_Facebook.m_CommandQueue, FacebookHandleCommand, (void*)params->m_L);
+    dmFacebook::QueueFlush(&g_Facebook.m_CommandQueue, dmFacebook::HandleCommand, (void*)params->m_L);
     return dmExtension::RESULT_OK;
 }
 

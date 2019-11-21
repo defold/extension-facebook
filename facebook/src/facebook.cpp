@@ -19,7 +19,7 @@ static int Facebook_LoginWithPermissions(lua_State* L)
     DM_LUA_STACK_CHECK(L, 0);
     luaL_checktype(L, 1, LUA_TTABLE);
     luaL_checktype(L, 2, LUA_TNUMBER);
-    luaL_checktype(L, 3, LUA_TFUNCTION);
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 3);
 
     char* permissions[128];
     int permission_count = luaTableToCArray(L, 1, permissions, sizeof(permissions) / sizeof(permissions[0]));
@@ -29,8 +29,6 @@ static int Facebook_LoginWithPermissions(lua_State* L)
     }
 
     int audience = luaL_checkinteger(L, 2);
-
-    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 3);
 
     Platform_FacebookLoginWithPermissions(L, (const char**) permissions, permission_count, audience, callback);
 

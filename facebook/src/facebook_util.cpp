@@ -637,7 +637,7 @@ void dmFacebook::RunStatusCallback(dmScript::LuaCallbackInfo* callback, const ch
     dmScript::TeardownCallback(callback);
 }
 
-void dmFacebook::RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, const char* jsonresult, const char* error)
+void dmFacebook::RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, const char* json, const char* error)
 {
     lua_State* L = dmScript::GetCallbackLuaContext(callback);
     DM_LUA_STACK_CHECK(L, 0);
@@ -646,16 +646,13 @@ void dmFacebook::RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, cons
         return;
     }
 
-    const char* json;
-    if (error) {
+    if (!json)
+    {
         lua_pushnil(L); // if an error, the result table is nil
-        json = error;
-    } else {
-        json = jsonresult;
     }
-
-    bool is_fail = false;
-    if (json) {
+    else
+    {
+        bool is_fail = false;
         dmJson::Document doc;
         dmJson::Result r = dmJson::Parse(json, &doc);
         if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
@@ -674,13 +671,9 @@ void dmFacebook::RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, cons
             dmScript::TeardownCallback(callback);
             return;
         }
-    } else {
-        lua_pushnil(L);
     }
 
-    if (!error) {
-        lua_pushnil(L); // if not an error, the error value is nil
-    }
+    dmFacebook::PushError(L, error);
 
     int ret = dmScript::PCall(L, 3, 0);
     (void)ret;

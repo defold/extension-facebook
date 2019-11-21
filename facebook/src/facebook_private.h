@@ -77,6 +77,7 @@ namespace dmFacebook {
     void QueuePush(CommandQueue* queue, FacebookCommand* cmd);
     void QueueFlush(CommandQueue* queue, FacebookCommandFn fn, void* ctx);
 
+    void HandleCommand(FacebookCommand* cmd, void* ctx);
 
 /*
     Notes on facebook.show_dialog in regards to FB SDK 4
