@@ -10,14 +10,6 @@ struct lua_State;
 namespace dmFacebook {
 
     /**
-     * Appends src to string dst of size siz (unlike strncat, size is the
-     * full size of dst, not space left).  At most size-1 characters
-     * will be copied.  Always NULL terminates (unless size == 0).
-     * Returns strlen(src); if retval >= siz, truncation occurred.
-     */
-    size_t StrlCat(char* dst, const char* src, size_t size);
-
-    /**
      * Check if a Lua table can be considered an array.
      * If the supplied table only has number keys in ascending order.
      * @param L Lua state

@@ -7,38 +7,6 @@
 #include <assert.h>
 #include <string.h>
 
-#if defined(_WIN32)
-#include <stdio.h>
-    #define snprintf _snprintf
-#endif
-
-size_t dmFacebook::StrlCat(char *dst, const char *src, size_t siz)
-{
-    char *d = dst;
-    const char *s = src;
-    size_t n = siz;
-    size_t dlen;
-
-    // Find the end of dst and adjust bytes left but don't go past end
-    while (*d != '\0' && n-- != 0)
-            d++;
-    dlen = d - dst;
-    n = siz - dlen;
-
-    if (n == 0)
-        return(dlen + strlen(s));
-    while (*s != '\0') {
-            if (n != 1) {
-                    *d++ = *s;
-                    n--;
-            }
-            s++;
-    }
-    *d = '\0';
-
-    return(dlen + (s - src));       // count does not include NULL
-}
-
 static int WriteString(char* dst, size_t dst_size, const char* src, size_t src_size)
 {
     if (!dst) {
@@ -68,10 +36,10 @@ void dmFacebook::JoinCStringArray(const char** array, uint32_t arrlen,
     {
         if (i > 0)
         {
-            (void)dmFacebook::StrlCat(buffer, delimiter, buflen);
+            (void)dmStrlCat(buffer, delimiter, buflen);
         }
 
-        (void)dmFacebook::StrlCat(buffer, array[i], buflen);
+        (void)dmStrlCat(buffer, array[i], buflen);
     }
 }
 
@@ -95,7 +63,7 @@ int dmFacebook::luaTableToCArray(lua_State* L, int index, char** buffer, uint32_
 
                 uint32_t permission_buffer_len = strlen(permission) + 1;
                 char* permission_buffer = (char*) malloc(permission_buffer_len);
-                snprintf(permission_buffer, permission_buffer_len, "%s", permission);
+                dmSnPrintf(permission_buffer, permission_buffer_len, "%s", permission);
 
                 buffer[entries++] = permission_buffer;
             }
@@ -292,12 +260,12 @@ size_t dmFacebook::LuaStringCommaArray(lua_State* L, int index, char* buffer, si
         if (!lua_isstring(L, -1))
             luaL_error(L, "array arguments can only be strings (not %s)", lua_typename(L, lua_type(L, -1)));
         if (*buffer != 0) {
-           dmFacebook::StrlCat(buffer, ",", buffer_size);
+           dmStrlCat(buffer, ",", buffer_size);
             out_buffer_size += 1;
         }
         size_t lua_str_size;
         const char* entry_str = lua_tolstring(L, -1, &lua_str_size);
-       dmFacebook::StrlCat(buffer, entry_str, buffer_size);
+       dmStrlCat(buffer, entry_str, buffer_size);
         out_buffer_size += lua_str_size;
         lua_pop(L, 1);
     }
