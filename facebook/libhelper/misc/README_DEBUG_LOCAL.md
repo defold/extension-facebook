@@ -17,9 +17,11 @@ Here we describe how to do that.
 
 * At the bottom of the page, press `Add Platform` and add `Facebook Web Games`
 
-* Under `Facebook Web Games` -> `Facebook Web Games URL (https)` set
+* Under `Website` -> `Site URL` set
 
 		https://localhost:8000/index.html?
+
+* Press `Save Changes` at the bottom of the page
 
 ### Facebook Login
 
@@ -53,9 +55,16 @@ Here we describe how to do that.
 		/dev/null 2>&1
 
 
-* Launch the http server:
+* Launch the https server:
 
 		$ python ~/facebook_server.py 8000
+
+Watch the output carefully, noticing if it launched the https server properly.
+If it didn't find the cert, it will launch a http server.
+
+E.g., if you are continually rebundling the game, it's beneficial to have the certs elsewhere:
+
+		$ (cd ~/bundles/myapp/ && python ~/projects/extension-facebook/facebook/misc/facebook_server.py 8000 ~/cert.pem ~/key.pem)
 
 ## Test the app
 
