@@ -2,6 +2,8 @@
 
 #include "facebook_util.h"
 
+#include <dmsdk/dlib/array.h>
+#include <dmsdk/dlib/mutex.h>
 #include <dmsdk/extension/extension.h>
 struct lua_State;
 
@@ -38,6 +40,44 @@ namespace dmFacebook {
         AUDIENCE_FRIENDS  = 3,
         AUDIENCE_EVERYONE = 4,
     };
+
+    enum CommandType {
+        COMMAND_TYPE_LOGIN                  = 1,
+        COMMAND_TYPE_REQUEST_READ           = 2,
+        COMMAND_TYPE_REQUEST_PUBLISH        = 3,
+        COMMAND_TYPE_DIALOG_COMPLETE        = 4,
+        COMMAND_TYPE_LOGIN_WITH_PERMISSIONS = 5,
+        COMMAND_TYPE_DEFERRED_APP_LINK      = 6
+    };
+
+    struct FacebookCommand
+    {
+        FacebookCommand()
+        {
+            memset(this, 0, sizeof(FacebookCommand));
+        }
+
+        dmScript::LuaCallbackInfo*  m_Callback;
+        const char*                 m_Results;
+        const char*                 m_Error;
+        uint8_t                     m_Type;
+        uint16_t                    m_State;
+    };
+
+    struct CommandQueue
+    {
+        dmArray<FacebookCommand>    m_Commands;
+        dmMutex::HMutex             m_Mutex;
+    };
+
+    typedef void (*FacebookCommandFn)(FacebookCommand* cmd, void* ctx);
+
+    void QueueCreate(CommandQueue* queue);
+    void QueueDestroy(CommandQueue* queue);
+    void QueuePush(CommandQueue* queue, FacebookCommand* cmd);
+    void QueueFlush(CommandQueue* queue, FacebookCommandFn fn, void* ctx);
+
+    void HandleCommand(FacebookCommand* cmd, void* ctx);
 
 /*
     Notes on facebook.show_dialog in regards to FB SDK 4
@@ -98,17 +138,17 @@ namespace dmFacebook {
     int Facebook_DisableEventUsage(lua_State* L);
     int Facebook_ShowDialog(lua_State* L);
 
-    void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, int callback, int context, lua_State* thread);
-    void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread);
+    void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback);
+    void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback);
 }
 
 // Caller must free the returned memory!
 const char* Platform_GetVersion();
 
-bool Platform_FacebookInitialized();
+bool                Platform_FacebookInitialized();
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id);
 dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params);
 dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params);
 dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params);
 dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params);
-void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event);
+void                Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event);

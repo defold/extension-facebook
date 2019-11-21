@@ -3,18 +3,11 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <dmsdk/script/script.h>
 
 struct lua_State;
 
 namespace dmFacebook {
-
-    /**
-     * Appends src to string dst of size siz (unlike strncat, size is the
-     * full size of dst, not space left).  At most size-1 characters
-     * will be copied.  Always NULL terminates (unless size == 0).
-     * Returns strlen(src); if retval >= siz, truncation occurred.
-     */
-    size_t StrlCat(char* dst, const char* src, size_t size);
 
     /**
      * Check if a Lua table can be considered an array.
@@ -141,9 +134,11 @@ namespace dmFacebook {
 
     int PushLuaTableFromJson(lua_State* L, const char* json);
 
-    void RunCallback(lua_State* L, int* _self, int* _callback, const char* error, int status);
+    void RunStatusCallback(dmScript::LuaCallbackInfo* callback, const char* error, int status);
 
-    void RunDeferredAppLinkCallback(lua_State*L, int* _self, int* _callback, char*result, char*error);
+    void RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, const char* jsonresult, const char* error);
+
+    void RunStateCallback(dmScript::LuaCallbackInfo* callback, int state, const char* error);
 
     void PushError(lua_State* L, const char* error);
 }

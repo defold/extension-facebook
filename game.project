@@ -14,14 +14,13 @@ height = 667
 high_dpi = 1
 
 [ios]
-bundle_identifier = com.defold.test
+bundle_identifier = com.defold.facebook
 
 [android]
-package = com.defold.test
+package = com.defold.facebook
 
 [library]
 include_dirs = facebook
 
 [facebook]
 appid = 1609643756005877
-
