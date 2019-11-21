@@ -2,6 +2,7 @@
 #include "facebook_util.h"
 #include <dmsdk/dlib/log.h>
 #include <dmsdk/dlib/json.h>
+#include <dmsdk/dlib/dstrings.h>
 #include <dmsdk/script/script.h>
 
 #include <assert.h>
