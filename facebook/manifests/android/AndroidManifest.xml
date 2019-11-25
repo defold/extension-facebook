@@ -11,9 +11,8 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:supportsRtl="true" >
         <meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{{project.title}}" />
-        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="{{facebook.appid}}"/>
         <activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-
+        
         <!--
          The initialization ContentProvider will call FacebookSdk.sdkInitialize automatically
          with the application context. This config is merged in with the host app's manifest,
