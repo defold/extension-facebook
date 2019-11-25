@@ -57,5 +57,9 @@
             </array>
         </dict>
     </array>
+    <key>FacebookAppID</key>
+    <string>{{facebook.appid}}</string>
+    <key>FacebookDisplayName</key>
+    <string>{{project.title}}</string>
 </dict>
 </plist>

@@ -26,11 +26,9 @@ struct Facebook
     Facebook()
     {
         memset(this, 0, sizeof(*this));
-        m_Callback = LUA_NOREF;
         m_Initialized = false;
     }
-    int m_Callback;
-    int m_Self;
+    dmScript::LuaCallbackInfo* m_Callback;
     const char* m_appId;
     const char* m_PermissionsJson;
     bool m_Initialized;
@@ -38,109 +36,20 @@ struct Facebook
 
 Facebook g_Facebook;
 
-typedef void (*OnAccessTokenCallback)(void *L, const char* access_token);
-typedef void (*OnMeCallback)(void *L, const char* json);
-typedef void (*OnShowDialogCallback)(void* L, const char* url, const char* error);
-typedef void (*OnLoginWithPermissionsCallback)(void* L, int status, const char* error, const char* permissions_json);
+typedef void (*OnAccessTokenCallback)(void* L, const char* access_token);
+typedef void (*OnShowDialogCallback)(void* luacallback, const char* url, const char* error);
+typedef void (*OnLoginWithPermissionsCallback)(void* luacallback, int status, const char* error, const char* permissions_json);
 
 extern "C" {
     // Implementation in library_facebook.js
     void dmFacebookInitialize(const char* app_id, const char* version);
     void dmFacebookAccessToken(OnAccessTokenCallback callback, lua_State* L);
-    void dmFacebookShowDialog(const char* params, const char* method, OnShowDialogCallback callback, lua_State* L);
+    void dmFacebookShowDialog(const char* params, const char* method, OnShowDialogCallback callback, dmScript::LuaCallbackInfo* luacallback);
     void dmFacebookDoLogout();
-    void dmFacebookLoginWithPermissions(int state_open, int state_closed, int state_failed, const char* permissions, OnLoginWithPermissionsCallback callback, lua_State* thread);
+    void dmFacebookLoginWithPermissions(int state_open, int state_closed, int state_failed, const char* permissions, OnLoginWithPermissionsCallback callback, dmScript::LuaCallbackInfo* luacallback);
     void dmFacebookPostEvent(const char* event, double valueToSum, const char* keys, const char* values);
     void dmFacebookEnableEventUsage();
     void dmFacebookDisableEventUsage();
-}
-
-static void RunCallback(lua_State* L, const char *error)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        int callback = g_Facebook.m_Callback;
-        g_Facebook.m_Callback = LUA_NOREF;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
-
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        dmFacebook::PushError(L, error);
-
-        lua_pcall(L, 2, 0, 0);
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
-static void RunDialogResultCallback(lua_State* L, const char *result_json, const char *error)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        int callback = g_Facebook.m_Callback;
-        g_Facebook.m_Callback = LUA_NOREF;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
-
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        if(result_json != 0)
-        {
-            if (dmFacebook::PushLuaTableFromJson(L, result_json)) {
-                dmLogError("Failed to parse dialog result JSON");
-                lua_newtable(L);
-            }
-        }
-        else
-        {
-            dmLogError("Got empty dialog result JSON (or FB error).");
-            lua_newtable((lua_State *)L);
-        }
-
-        dmFacebook::PushError(L, error);
-
-        lua_pcall(L, 3, 0, 0);
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, callback);
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
-static void VerifyCallback(lua_State* L)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        dmLogError("Unexpected callback set");
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        g_Facebook.m_Callback = LUA_NOREF;
-        g_Facebook.m_Self = LUA_NOREF;
-    }
 }
 
 namespace dmFacebook
@@ -153,7 +62,6 @@ int Facebook_Logout(lua_State* L)
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
     int top = lua_gettop(L);
-    VerifyCallback(L);
 
     dmFacebookDoLogout();
 
@@ -170,23 +78,20 @@ bool PlatformFacebookInitialized()
     return !!g_Facebook.m_appId;
 }
 
-static void OnLoginWithPermissions(void* L, int status, const char* error, const char* permissions_json)
+static void OnLoginWithPermissions(dmScript::LuaCallbackInfo* callback, int status, const char* error, const char* permissions_json)
 {
     if (permissions_json != 0x0)
     {
         g_Facebook.m_PermissionsJson = permissions_json;
     }
 
-    RunCallback((lua_State*) L, &g_Facebook.m_Self, &g_Facebook.m_Callback, error, status);
+    dmFacebook::RunStatusCallback(callback, error, status);
+    dmScript::DestroyCallback(callback);
 }
 
-void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions,
-    uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
+void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
+    uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback)
 {
-    VerifyCallback(L);
-    g_Facebook.m_Callback = callback;
-    g_Facebook.m_Self = context;
-
     char cstr_permissions[2048];
     cstr_permissions[0] = 0x0;
     JoinCStringArray(permissions, permission_count, cstr_permissions,
@@ -194,23 +99,7 @@ void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions
 
     dmFacebookLoginWithPermissions(
         dmFacebook::STATE_OPEN, dmFacebook::STATE_CLOSED, dmFacebook::STATE_CLOSED_LOGIN_FAILED,
-        cstr_permissions, (OnLoginWithPermissionsCallback) OnLoginWithPermissions, thread);
-}
-
-static void AppendArray(lua_State* L, char* buffer, uint32_t buffer_size, int idx)
-{
-    lua_pushnil(L);
-    *buffer = 0;
-    while (lua_next(L, idx) != 0)
-    {
-        if (!lua_isstring(L, -1))
-            luaL_error(L, "permissions can only be strings (not %s)", lua_typename(L, lua_type(L, -1)));
-        if (*buffer != 0)
-            dmFacebook::StrlCat(buffer, ",", buffer_size);
-        const char* permission = lua_tostring(L, -1);
-        dmFacebook::StrlCat(buffer, permission, buffer_size);
-        lua_pop(L, 1);
-    }
+        cstr_permissions, (OnLoginWithPermissionsCallback) OnLoginWithPermissions, callback);
 }
 
 static void OnAccessTokenComplete(void* L, const char* access_token)
@@ -232,11 +121,10 @@ int Facebook_AccessToken(lua_State* L)
     {
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
-    int top = lua_gettop(L);
+    DM_LUA_STACK_CHECK(L, 1);
 
     dmFacebookAccessToken( (OnAccessTokenCallback) OnAccessTokenComplete, L);
 
-    assert(top + 1 == lua_gettop(L));
     return 1;
 }
 
@@ -246,7 +134,7 @@ int Facebook_Permissions(lua_State* L)
     {
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
-    int top = lua_gettop(L);
+    DM_LUA_STACK_CHECK(L, 1);
 
     if(g_Facebook.m_PermissionsJson != 0)
     {
@@ -264,13 +152,13 @@ int Facebook_Permissions(lua_State* L)
         lua_newtable((lua_State *)L);
     }
 
-    assert(top + 1 == lua_gettop(L));
     return 1;
 }
 
-static void OnShowDialogComplete(void* L, const char* result_json, const char* error)
+static void OnShowDialogComplete(dmScript::LuaCallbackInfo* callback, const char* result_json, const char* error)
 {
-    RunDialogResultCallback((lua_State*)L, result_json, error);
+    dmFacebook::RunJsonResultCallback(callback, result_json, error);
+    dmScript::DestroyCallback(callback);
 }
 
 int Facebook_ShowDialog(lua_State* L)
@@ -279,23 +167,18 @@ int Facebook_ShowDialog(lua_State* L)
     {
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
-    int top = lua_gettop(L);
-    VerifyCallback(L);
+    DM_LUA_STACK_CHECK(L, 0);
 
     const char* dialog = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
-    luaL_checktype(L, 3, LUA_TFUNCTION);
-    lua_pushvalue(L, 3);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
+
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 3);
 
     lua_newtable(L);
     int to_index = lua_gettop(L);
     if (0 == dmFacebook::DialogTableToEmscripten(L, dialog, 2, to_index)) {
         lua_pop(L, 1);
-        assert(top == lua_gettop(L));
-        return luaL_error(L, "Could not convert show dialog param table.");
+        return DM_LUA_ERROR("Could not convert show dialog param table.");
     }
 
     int size_needed = 1 + dmFacebook::LuaTableToJson(L, to_index, 0, 0);
@@ -303,23 +186,21 @@ int Facebook_ShowDialog(lua_State* L)
 
     if (params_json == 0 || 0 == dmFacebook::LuaTableToJson(L, to_index, params_json, size_needed)) {
         lua_pop(L, 1);
-        assert(top == lua_gettop(L));
         if( params_json ) {
             free(params_json);
         }
-        return luaL_error(L, "Dialog params table too large.");
+        return DM_LUA_ERROR("Dialog params table too large.");
     }
     lua_pop(L, 1);
 
-    dmFacebookShowDialog(params_json, dialog, (OnShowDialogCallback) OnShowDialogComplete, dmScript::GetMainThread(L));
+    dmFacebookShowDialog(params_json, dialog, (OnShowDialogCallback) OnShowDialogComplete, callback);
     free(params_json);
-
-    assert(top == lua_gettop(L));
     return 0;
 }
 
 int Facebook_PostEvent(lua_State* L)
 {
+    DM_LUA_STACK_CHECK(L, 0);
     int argc = lua_gettop(L);
     const char* event = dmFacebook::Analytics::GetEvent(L, 1);
     double valueToSum = luaL_checknumber(L, 2);
@@ -361,7 +242,7 @@ int Facebook_DisableEventUsage(lua_State* L)
     return 0;
 }
 
-void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread)
+void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
 {
     dmLogOnceDebug("get_deferred_app_link() function isn't supported on HTML5 platform");
 }

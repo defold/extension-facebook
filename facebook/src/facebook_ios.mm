@@ -11,40 +11,33 @@
 #import <objc/runtime.h>
 
 #include "facebook_private.h"
+#include "facebook_util.h"
 #include "facebook_analytics.h"
+
+@class FacebookAppDelegate;
 
 struct Facebook
 {
     Facebook() {
         memset(this, 0, sizeof(*this));
-        m_Callback = LUA_NOREF;
-        m_Self = LUA_NOREF;
-        m_Callback_DeferredAppLink = LUA_NOREF;
-        m_Self_DeferredAppLink = LUA_NOREF;
     }
 
-    FBSDKLoginManager *m_Login;
-    int m_Callback;
-    int m_Self;
+    FBSDKLoginManager*          m_Login;
+    dmFacebook::CommandQueue    m_CommandQueue;
+    FacebookAppDelegate*        m_Delegate;
+    int                         m_DisableFaceBookEvents;
 
-    int m_Callback_DeferredAppLink;
-    int m_Self_DeferredAppLink;
-
-    int m_DisableFaceBookEvents;
-    lua_State* m_MainThread;
-    id<UIApplicationDelegate,
-       FBSDKSharingDelegate,
-       FBSDKGameRequestDialogDelegate> m_Delegate;
 };
 
 Facebook g_Facebook;
 
-static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* error);
-static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* error);
+static const char* ObjCToJson(id obj);
+static void PushJsonCommand(dmScript::LuaCallbackInfo* callback, const char* result, const char* error);
 
 // AppDelegate used temporarily to hijack all AppDelegate messages
 // An improvment could be to create generic proxy
 @interface FacebookAppDelegate : NSObject <UIApplicationDelegate, FBSDKSharingDelegate, FBSDKGameRequestDialogDelegate>
+@property dmScript::LuaCallbackInfo* m_Callback;
 
 - (BOOL)application:(UIApplication *)application
                    openURL:(NSURL *)url
@@ -102,9 +95,10 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
             if (results[@"postId"]) {
                 [new_res setValue:results[@"postId"] forKey:@"post_id"];
             }
-            RunDialogResultCallback(g_Facebook.m_MainThread, new_res, 0);
+
+            PushJsonCommand(self.m_Callback, ObjCToJson(new_res), 0);
         } else {
-            RunDialogResultCallback(g_Facebook.m_MainThread, 0, 0);
+            PushJsonCommand(self.m_Callback, 0, 0);
         }
     }
 
@@ -113,7 +107,7 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         {
             return;
         }
-        RunDialogResultCallback(g_Facebook.m_MainThread, 0, error);
+        PushJsonCommand(self.m_Callback, 0, strdup([error.localizedDescription UTF8String]));
     }
 
     - (void)sharerDidCancel:(id<FBSDKSharing>)sharer {
@@ -123,7 +117,8 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         }
         NSMutableDictionary *errorDetail = [NSMutableDictionary dictionary];
         [errorDetail setValue:@"Share dialog was cancelled" forKey:NSLocalizedDescriptionKey];
-        RunDialogResultCallback(g_Facebook.m_MainThread, 0, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
+        NSError* error = [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail];
+        PushJsonCommand(self.m_Callback, 0, strdup([error.localizedDescription UTF8String]));
     }
 
     // Game request related methods
@@ -151,9 +146,9 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
                     [new_res setObject:results[key] forKey:@"request_id"];
                 }
             }
-            RunDialogResultCallback(g_Facebook.m_MainThread, new_res, 0);
+            PushJsonCommand(self.m_Callback, ObjCToJson(new_res), 0);
         } else {
-            RunDialogResultCallback(g_Facebook.m_MainThread, 0, 0);
+            PushJsonCommand(self.m_Callback, 0, 0);
         }
     }
 
@@ -162,7 +157,7 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         {
             return;
         }
-        RunDialogResultCallback(g_Facebook.m_MainThread, 0, error);
+        PushJsonCommand(self.m_Callback, 0, strdup([error.localizedDescription UTF8String]));
     }
 
     - (void)gameRequestDialogDidCancel:(FBSDKGameRequestDialog *)gameRequestDialog {
@@ -172,11 +167,29 @@ static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* 
         }
         NSMutableDictionary *errorDetail = [NSMutableDictionary dictionary];
         [errorDetail setValue:@"Game request dialog was cancelled" forKey:NSLocalizedDescriptionKey];
-        RunDialogResultCallback(g_Facebook.m_MainThread, 0, [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail]);
+        NSError* error = [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail];
+        PushJsonCommand(self.m_Callback, 0, strdup([error.localizedDescription UTF8String]));
     }
 
 
 @end
+
+
+struct FacebookAppDelegateRegister
+{
+    FacebookAppDelegateRegister() {
+        g_Facebook.m_Delegate = [[FacebookAppDelegate alloc] init];
+        dmExtension::RegisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
+    }
+
+    ~FacebookAppDelegateRegister() {
+        dmExtension::UnregisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
+        [g_Facebook.m_Delegate release];
+    }
+};
+
+FacebookAppDelegateRegister g_FacebookDelegateRegister;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions for Lua API
@@ -246,132 +259,29 @@ static id GetTableValue(lua_State* L, int table_index, NSArray* keys, int expect
     return r;
 }
 
-static void VerifyCallback(lua_State* L)
+// Caller will own the buffer, and must call free() on it!
+static const char* ObjCToJson(id obj)
 {
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        dmLogError("Unexpected callback set");
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        g_Facebook.m_Callback = LUA_NOREF;
-        g_Facebook.m_Self = LUA_NOREF;
+    NSError* error;
+    NSData* jsonData = [NSJSONSerialization dataWithJSONObject:obj options:(NSJSONWritingOptions)0 error:&error];
+    if (!jsonData)
+    {
+        return 0;
     }
+    NSString* nsstring = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    const char* json = strdup([nsstring UTF8String]);
+    [nsstring release];
+    return json;
 }
 
-
-static void RunStateCallback(lua_State*L, dmFacebook::State status, NSError* error)
+static void PushJsonCommand(dmScript::LuaCallbackInfo* callback, const char* result, const char* error)
 {
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        lua_pushnumber(L, (lua_Number) status);
-        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
-
-        int ret = lua_pcall(L, 3, 0, 0);
-        if (ret != 0) {
-            dmLogError("Error running facebook callback: %s", lua_tostring(L, -1));
-            lua_pop(L, 1);
-        }
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        g_Facebook.m_Callback = LUA_NOREF;
-        g_Facebook.m_Self = LUA_NOREF;
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
-static void ObjCToLua(lua_State*L, id obj)
-{
-    if ([obj isKindOfClass:[NSString class]]) {
-        const char* str = [((NSString*) obj) UTF8String];
-        lua_pushstring(L, str);
-    } else if ([obj isKindOfClass:[NSNumber class]]) {
-        lua_pushnumber(L, [((NSNumber*) obj) doubleValue]);
-    } else if ([obj isKindOfClass:[NSNull class]]) {
-        lua_pushnil(L);
-    } else if ([obj isKindOfClass:[NSDictionary class]]) {
-        NSDictionary* dict = (NSDictionary*) obj;
-        lua_createtable(L, 0, [dict count]);
-        for (NSString* key in dict) {
-            lua_pushstring(L, [key UTF8String]);
-            id value = [dict objectForKey:key];
-            ObjCToLua(L, (NSDictionary*) value);
-            lua_rawset(L, -3);
-        }
-    } else if ([obj isKindOfClass:[NSArray class]]) {
-        NSArray* a = (NSArray*) obj;
-        lua_createtable(L, [a count], 0);
-        for (int i = 0; i < [a count]; ++i) {
-            ObjCToLua(L, [a objectAtIndex: i]);
-            lua_rawseti(L, -2, i+1);
-        }
-    } else {
-        dmLogWarning("Unsupported value '%s' (%s)", [[obj description] UTF8String], [[[obj class] description] UTF8String]);
-        lua_pushnil(L);
-    }
-}
-
-static void RunDialogResultCallback(lua_State*L, NSDictionary* result, NSError* error)
-{
-    if (g_Facebook.m_Callback != LUA_NOREF) {
-        int top = lua_gettop(L);
-
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        // Setup self
-        lua_rawgeti(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        lua_pushvalue(L, -1);
-        dmScript::SetInstance(L);
-
-        if (!dmScript::IsInstanceValid(L))
-        {
-            dmLogError("Could not run facebook callback because the instance has been deleted.");
-            lua_pop(L, 2);
-            assert(top == lua_gettop(L));
-            return;
-        }
-
-        ObjCToLua(L, result);
-
-        dmFacebook::PushError(L, [error.localizedDescription UTF8String]);
-
-        int ret = lua_pcall(L, 3, 0, 0);
-        if (ret != 0) {
-            dmLogError("Error running facebook callback: %s", lua_tostring(L, -1));
-            lua_pop(L, 1);
-        }
-        assert(top == lua_gettop(L));
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Callback);
-        dmScript::Unref(L, LUA_REGISTRYINDEX, g_Facebook.m_Self);
-        g_Facebook.m_Callback = LUA_NOREF;
-        g_Facebook.m_Self = LUA_NOREF;
-    } else {
-        dmLogError("No callback set");
-    }
-}
-
-static void AppendArray(lua_State*L, NSMutableArray* array, int table)
-{
-    lua_pushnil(L);
-    while (lua_next(L, table) != 0) {
-        const char* p = luaL_checkstring(L, -1);
-        [array addObject: [NSString stringWithUTF8String: p]];
-        lua_pop(L, 1);
-    }
+    dmFacebook::FacebookCommand cmd;
+    cmd.m_Callback = callback;
+    cmd.m_Results = result;
+    cmd.m_Error = error;
+    cmd.m_Type = dmFacebook::COMMAND_TYPE_DIALOG_COMPLETE; // will invoke the json callback path
+    dmFacebook::QueuePush(&g_Facebook.m_CommandQueue, &cmd);
 }
 
 static FBSDKDefaultAudience convertDefaultAudience(int fromLuaInt) {
@@ -412,22 +322,19 @@ static FBSDKGameRequestFilter convertGameRequestFilters(int fromLuaInt) {
     }
 }
 
-static void PrepareCallback(lua_State* thread, FBSDKLoginManagerLoginResult* result, NSError* error)
+static void LoginCallback(dmScript::LuaCallbackInfo* callback, FBSDKLoginManagerLoginResult* result, NSError* error)
 {
     if (error)
     {
-        RunCallback(thread, &g_Facebook.m_Self, &g_Facebook.m_Callback,
-            [error.localizedDescription UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
+        dmFacebook::RunStatusCallback(callback, [error.localizedDescription UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
     }
     else if (result.isCancelled)
     {
-        RunCallback(thread, &g_Facebook.m_Self, &g_Facebook.m_Callback,
-            "Login was cancelled", dmFacebook::STATE_CLOSED_LOGIN_FAILED);
+        dmFacebook::RunStatusCallback(callback, "Login was cancelled", dmFacebook::STATE_CLOSED_LOGIN_FAILED);
     }
     else
     {
-        RunCallback(thread, &g_Facebook.m_Self, &g_Facebook.m_Callback,
-            nil, dmFacebook::STATE_OPEN);
+        dmFacebook::RunStatusCallback(callback, 0, dmFacebook::STATE_OPEN);
     }
 }
 
@@ -442,20 +349,18 @@ bool PlatformFacebookInitialized()
     return !!g_Facebook.m_Login;
 }
 
-void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions,
-    uint32_t permission_count, int audience, int callback, int context, lua_State* thread)
+void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
+    uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback)
 {
     // This function must always return so memory for `permissions` can be free'd.
-    VerifyCallback(L);
-    g_Facebook.m_Callback = callback;
-    g_Facebook.m_Self = context;
+    g_Facebook.m_Delegate.m_Callback = callback;
 
     // Check if there already is a access token, and if it has expired.
     // In such case we want to reautorize instead of doing a new login.
     if ([FBSDKAccessToken currentAccessToken]) {
         if ([FBSDKAccessToken currentAccessToken].dataAccessExpired) {
             [g_Facebook.m_Login reauthorizeDataAccess:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-                PrepareCallback(thread, result, error);
+                LoginCallback(callback, result, error);
             }];
             return;
         }
@@ -471,24 +376,20 @@ void PlatformFacebookLoginWithPermissions(lua_State* L, const char** permissions
     @try {
         [g_Facebook.m_Login setDefaultAudience: convertDefaultAudience(audience)];
         [g_Facebook.m_Login logInWithPermissions: ns_permissions fromViewController:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-            PrepareCallback(thread, result, error);
+            LoginCallback(callback, result, error);
         }];
     } @catch (NSException* exception) {
         NSString* errorMessage = [NSString stringWithFormat:@"Unable to request permissions: %@", exception.reason];
-        RunCallback(thread, &g_Facebook.m_Self, &g_Facebook.m_Callback,
-            [errorMessage UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
+        dmFacebook::RunStatusCallback(callback, [errorMessage UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
     }
 }
 
-void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, lua_State* thread)
+void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
 {
-    VerifyCallback(L);
-    g_Facebook.m_Callback_DeferredAppLink = callback;
-    g_Facebook.m_Self_DeferredAppLink = context;
-
+    g_Facebook.m_Delegate.m_Callback = callback;
     [FBSDKAppLinkUtility fetchDeferredAppLink:^(NSURL *url, NSError *error) {
-        char*errorMsg = 0;
-        char*result = 0;
+        const char* errorMsg = 0;
+        const char* result = 0;
         if (error) {
             NSString *errorMessage =
                 error.userInfo[FBSDKErrorLocalizedDescriptionKey] ?:
@@ -509,24 +410,25 @@ void Platform_FetchDeferredAppLinkData(lua_State* L, int callback, int context, 
                         [dict setObject:parsedUrl.targetURL.absoluteString forKey:@"target_url"];
                     }
                 }
-                    NSError * err;
-                    NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:dict options:0 error:&err];
-                    if (!jsonData && err) {
-                        errorMsg = (char*)[err.localizedDescription UTF8String];
-                    } else {
-                        NSString * jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-                        result = (char*)[jsonString UTF8String];
-                    }
+
+                NSError * err;
+                NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:dict options:0 error:&err];
+                if (!jsonData && err) {
+                    errorMsg = (char*)[err.localizedDescription UTF8String];
+                } else {
+                    NSString * jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                    result = (char*)[jsonString UTF8String];
+                }
             } else {
                 result = "{}";
             }
         }
         if (errorMsg) {
-            errorMsg = (char*)[NSString stringWithFormat:@"{'error':'%@'}", errorMsg];
+            errorMsg = (char*)[NSString stringWithFormat:@"{'error':'%s'}", errorMsg];
         }
-        dmFacebook::RunDeferredAppLinkCallback(L, &g_Facebook.m_Self_DeferredAppLink, &g_Facebook.m_Callback_DeferredAppLink, result, errorMsg);
+        PushJsonCommand(callback, result?strdup(result):0, errorMsg?strdup(errorMsg):0);
     }];
-    
+
 }
 
 int Facebook_Logout(lua_State* L)
@@ -537,11 +439,6 @@ int Facebook_Logout(lua_State* L)
     }
     [g_Facebook.m_Login logOut];
     return 0;
-}
-
-static void RunCallback(lua_State* L, NSError* error)
-{
-    RunCallback(L, &g_Facebook.m_Self, &g_Facebook.m_Callback, [error.localizedDescription UTF8String], -1);
 }
 
 int Facebook_AccessToken(lua_State* L)
@@ -637,16 +534,11 @@ int Facebook_ShowDialog(lua_State* L)
         return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
     }
     int top = lua_gettop(L);
-    VerifyCallback(L);
 
     dmhash_t dialog = dmHashString64(luaL_checkstring(L, 1));
     luaL_checktype(L, 2, LUA_TTABLE);
-    luaL_checktype(L, 3, LUA_TFUNCTION);
-    lua_pushvalue(L, 3);
-    g_Facebook.m_Callback = dmScript::Ref(L, LUA_REGISTRYINDEX);
-    dmScript::GetInstance(L);
-    g_Facebook.m_Self = dmScript::Ref(L, LUA_REGISTRYINDEX);
-    g_Facebook.m_MainThread = dmScript::GetMainThread(L);
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 3);
+    g_Facebook.m_Delegate.m_Callback = callback;
 
     if (dialog == dmHashString64("feed")) {
 
@@ -690,8 +582,7 @@ int Facebook_ShowDialog(lua_State* L)
         [errorDetail setValue:@"Invalid dialog type" forKey:NSLocalizedDescriptionKey];
         NSError* error = [NSError errorWithDomain:@"facebook" code:0 userInfo:errorDetail];
 
-        lua_State* main_thread = dmScript::GetMainThread(L);
-        RunDialogResultCallback(main_thread, 0, error);
+        PushJsonCommand(callback, 0, strdup([error.localizedDescription UTF8String]));
     }
 
     assert(top == lua_gettop(L));
@@ -713,12 +604,11 @@ bool Platform_FacebookInitialized()
 
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
 {
-    g_Facebook.m_Delegate = [[FacebookAppDelegate alloc] init];
-    dmExtension::RegisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
+    (void)app_id;
+
+    dmFacebook::QueueCreate(&g_Facebook.m_CommandQueue);
 
     g_Facebook.m_DisableFaceBookEvents = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.disable_events", 0);
-
-    [FBSDKSettings setAppID: [NSString stringWithUTF8String: app_id]];
 
     g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
 
@@ -733,8 +623,9 @@ dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
         return dmExtension::RESULT_OK;
     }
 
-    dmExtension::UnregisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
     [g_Facebook.m_Login release];
+
+    dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
     return dmExtension::RESULT_OK;
 }
 
@@ -746,7 +637,7 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
 
 dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params)
 {
-    (void)params;
+    dmFacebook::QueueFlush(&g_Facebook.m_CommandQueue, dmFacebook::HandleCommand, (void*)params->m_L);
     return dmExtension::RESULT_OK;
 }
 
