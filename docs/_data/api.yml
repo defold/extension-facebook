@@ -64,7 +64,7 @@
             Log in to Facebook with a set of read permissions
             ```lua
             local permissions = {"public_profile", "email", "user_friends"}
-            facebook.login_with_read_permissions(permissions, facebook.AUDIENCE_EVERYONE, function(self, data)
+            facebook.login_with_permissions(permissions, facebook.AUDIENCE_EVERYONE, function(self, data)
                 if (data.status == facebook.STATE_OPEN and data.error == nil) then
                     print("Successfully logged into Facebook")
                     pprint(facebook.permissions())
