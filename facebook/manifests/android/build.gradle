@@ -1,0 +1,20 @@
+dependencies {
+  // https://developer.android.com/topic/libraries/support-library/packages
+  // compile 'com.android.support:support-compat:27.0.2'
+  // compile 'com.android.support:appcompat-v7:27.0.2'
+
+  // compile 'com.parse.bolts:bolts-android:1.4.0'
+  // compile 'com.parse.bolts:bolts-applinks:1.4.0'
+  // compile 'com.parse.bolts:bolts-tasks:1.4.0'
+
+  // compile 'com.google.zxing:core:3.3.3'
+
+  // https://developers.facebook.com/docs/android/getting-started/
+  compile 'com.facebook.android:facebook-common:5.9.0'
+  compile 'com.facebook.android:facebook-core:5.9.0'
+  compile 'com.facebook.android:facebook-login:5.9.0'
+  compile 'com.facebook.android:facebook-share:5.9.0'
+  compile 'com.facebook.android:facebook-applinks:5.9.0'
+  compile 'com.facebook.android:facebook-places:5.9.0'
+  compile 'com.facebook.android:facebook-messenger:5.9.0'
+}
