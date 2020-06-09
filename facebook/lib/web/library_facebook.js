@@ -11,10 +11,10 @@ var LibraryFacebook = {
             // This script tag MUST be located before the engine (game) js script tag.
             try {
                 FB.init({
-                    appId      : Pointer_stringify(app_id),
+                    appId      : UTF8ToString(app_id),
                     status     : false,
                     xfbml      : false,
-                    version    : Pointer_stringify(version),
+                    version    : UTF8ToString(version),
                 });
 
                 window._dmFacebookUpdatePermissions = function(callback) {
@@ -63,15 +63,15 @@ var LibraryFacebook = {
                         var delta = (currentTimeStamp - FBinner.loginTimestamp) / 1000;
                         if (delta >= response.reauthorize_required_in) {
                             FBinner.needsReauth = true;
-                            Runtime.dynCall('vii', callback, [lua_state, 0]);
+                            dynCall('vii', callback, [lua_state, 0]);
                             return;
                         }
                     }
 
                     var buf = allocate(intArrayFromString(access_token), 'i8', ALLOC_STACK);
-                    Runtime.dynCall('vii', callback, [lua_state, buf]);
+                    dynCall('vii', callback, [lua_state, buf]);
                 } else {
-                    Runtime.dynCall('vii', callback, [lua_state, 0]);
+                    dynCall('vii', callback, [lua_state, 0]);
                 }
             } catch (e){
                 console.error("Facebook access token failed " + e);
@@ -80,8 +80,8 @@ var LibraryFacebook = {
 
         // https://developers.facebook.com/docs/javascript/reference/FB.ui
         dmFacebookShowDialog: function(params, mth, callback, lua_state) {
-            var par = JSON.parse(Pointer_stringify(params));
-            par.method = Pointer_stringify(mth);
+            var par = JSON.parse(UTF8ToString(params));
+            par.method = UTF8ToString(mth);
 
             try {
                 FB.ui(par, function(response) {
@@ -91,10 +91,10 @@ var LibraryFacebook = {
                     if(e == 0) {
                         var res_data = JSON.stringify(response);
                         var res_buf = allocate(intArrayFromString(res_data), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viii', callback, [lua_state, res_buf, e]);
+                        dynCall('viii', callback, [lua_state, res_buf, e]);
                     } else {
                         var error = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viii', callback, [lua_state, 0, error]);
+                        dynCall('viii', callback, [lua_state, 0, error]);
                     }
                 });
             } catch (e) {
@@ -106,9 +106,9 @@ var LibraryFacebook = {
         dmFacebookPostEvent: function(event, value_to_sum, keys, values) {
             var params = {};
             try {
-                event = Pointer_stringify(event);
-                keys = JSON.parse(Pointer_stringify(keys));
-                values = JSON.parse(Pointer_stringify(values));
+                event = UTF8ToString(event);
+                keys = JSON.parse(UTF8ToString(keys));
+                values = JSON.parse(UTF8ToString(values));
                 for (var i = 0; i < keys.length; ++i) {
                     params[keys[i]] = values[i];
                 }
@@ -146,7 +146,7 @@ var LibraryFacebook = {
         dmFacebookLoginWithPermissions: function(
             state_open, state_closed, state_failed, permissions, callback, thread) {
             try {
-                var opts = {scope: Pointer_stringify(permissions)};
+                var opts = {scope: UTF8ToString(permissions)};
                 if (FBinner.needsReauth) {
                     opts.auth_type = "reauthorize";
                     FBinner.needsReauth = false;
@@ -161,19 +161,19 @@ var LibraryFacebook = {
                         window._dmFacebookUpdatePermissions(function (_error, _permissions) {
                             if (_error == 0) {
                                 var permissionsbuf = allocate(intArrayFromString(_permissions), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viiii', callback, [thread, state_open, 0, permissionsbuf]);
+                                dynCall('viiii', callback, [thread, state_open, 0, permissionsbuf]);
                             } else {
                                 var errbuf = allocate(intArrayFromString(_error), 'i8', ALLOC_STACK);
-                                Runtime.dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
+                                dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
                             }
                         });
                     } else if (error != 0) {
                         var errbuf = allocate(intArrayFromString(error), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viiii', callback, [thread, state_closed, errbuf, 0]);
+                        dynCall('viiii', callback, [thread, state_closed, errbuf, 0]);
                     } else {
                         var errmsg = "Login was cancelled";
                         var errbuf = allocate(intArrayFromString(errmsg), 'i8', ALLOC_STACK);
-                        Runtime.dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
+                        dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
                     }
                 }, opts);
             } catch (error) {
