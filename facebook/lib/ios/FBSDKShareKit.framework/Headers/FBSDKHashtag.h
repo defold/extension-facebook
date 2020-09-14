@@ -18,11 +18,7 @@
 
 #import <Foundation/Foundation.h>
 
-#ifdef BUCK
-#import <FBSDKCoreKit/FBSDKCoreKit.h>
-#else
-@import FBSDKCoreKit;
-#endif
+#import "FBSDKCoreKitImport.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

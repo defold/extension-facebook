@@ -16,31 +16,15 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
+// Importing FBSDKCoreKit is tricky due to build variants.
+// SPM require that it is imported as <FBSDKCoreKit.h> while CocoaPods,
+// Carthage, Buck, and xcodebuild require <FBSDKCoreKit/FBSDKCoreKit.h>
+// This file is not exposed via SPM so non SPM users will use <FBSDKCoreKit/FBSDKCoreKit.h>
 
-#ifdef BUCK
-#import <FBSDKCoreKit/FBSDKCoreKit.h>
+// Even though this file is not available from projects using SPM,
+// it is available when building the packages themselves so we need to include this check.
+#if SWIFT_PACKAGE
+#import <FBSDKCoreKit.h>
 #else
-@import FBSDKCoreKit;
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
 #endif
-
-#import "FBSDKShareConstants.h"
-
-NS_ASSUME_NONNULL_BEGIN
-
-/**
- A base interface for Messenger share action buttons.
- */
-DEPRECATED_FOR_MESSENGER
-NS_SWIFT_NAME(ShareMessengerActionButton)
-@protocol FBSDKShareMessengerActionButton <FBSDKCopying, NSSecureCoding>
-
-/**
- The title displayed to the user for the button.
- @return The title for the button.
- */
-@property (nonatomic, copy) NSString *title;
-
-@end
-
-NS_ASSUME_NONNULL_END
