@@ -18,12 +18,7 @@
 
 #import <UIKit/UIKit.h>
 
-#ifdef BUCK
-#import <FBSDKCoreKit/FBSDKCoreKit.h>
-#else
-@import FBSDKCoreKit;
-#endif
-
+#import "FBSDKCoreKitImport.h"
 #import "FBSDKShareMediaContent.h"
 #import "FBSDKSharingValidation.h"
 

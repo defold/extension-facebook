@@ -16,40 +16,15 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
+// Importing FBSDKCoreKit is tricky due to build variants.
+// SPM require that it is imported as <FBSDKCoreKit.h> while CocoaPods,
+// Carthage, Buck, and xcodebuild require <FBSDKCoreKit/FBSDKCoreKit.h>
+// This file is not exposed via SPM so non SPM users will use <FBSDKCoreKit/FBSDKCoreKit.h>
 
-#import "FBSDKShareOpenGraphAction.h"
-#import "FBSDKSharingContent.h"
-
-NS_ASSUME_NONNULL_BEGIN
-
-/**
-  A model for Open Graph content to be shared.
- */
-NS_SWIFT_NAME(ShareOpenGraphContent)
-DEPRECATED_MSG_ATTRIBUTE("Open Graph no longer available; use FBSDKShareLinkContent instead.")
-@interface FBSDKShareOpenGraphContent : NSObject <FBSDKSharingContent>
-
-/**
-  Open Graph Action to be shared.
- @return The action
- */
-@property (nonatomic, copy) FBSDKShareOpenGraphAction *action;
-
-/**
-  Property name that points to the primary Open Graph Object in the action.
-
- The value that this action points to will be use for rendering the preview for the share.
- */
-@property (nonatomic, copy) NSString *previewPropertyName;
-
-/**
-  Compares the receiver to another Open Graph content.
- @param content The other content
- @return YES if the receiver's values are equal to the other content's values; otherwise NO
- */
-- (BOOL)isEqualToShareOpenGraphContent:(FBSDKShareOpenGraphContent *)content;
-
-@end
-
-NS_ASSUME_NONNULL_END
+// Even though this file is not available from projects using SPM,
+// it is available when building the packages themselves so we need to include this check.
+#if SWIFT_PACKAGE
+#import <FBSDKCoreKit.h>
+#else
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#endif

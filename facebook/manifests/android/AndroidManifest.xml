@@ -12,7 +12,7 @@
         android:supportsRtl="true" >
         <meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{{project.title}}" />
         <activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-        
+
         <!--
          The initialization ContentProvider will call FacebookSdk.sdkInitialize automatically
          with the application context. This config is merged in with the host app's manifest,
@@ -22,7 +22,7 @@
          following placeholder in the authority to identify each host application as if it was
          a completely different provider.
         -->
-        <provider
+        <!-- <provider
             android:name="com.facebook.internal.FacebookInitProvider"
             android:authorities="{{android.package}}.FacebookInitProvider"
             android:exported="false" />
@@ -48,7 +48,7 @@
             android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
             android:theme="@style/com_facebook_activity_theme" />
         <activity android:name="com.facebook.CustomTabMainActivity" />
-        <activity android:name="com.facebook.CustomTabActivity" />
+        <activity android:name="com.facebook.CustomTabActivity" /> -->
     </application>
 
 </manifest>

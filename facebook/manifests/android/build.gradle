@@ -1,10 +1,8 @@
 dependencies {
   // https://developers.facebook.com/docs/android/getting-started/
-  compile 'com.facebook.android:facebook-common:5.9.0'
-  compile 'com.facebook.android:facebook-core:5.9.0'
-  compile 'com.facebook.android:facebook-login:5.9.0'
-  compile 'com.facebook.android:facebook-share:5.9.0'
-  compile 'com.facebook.android:facebook-applinks:5.9.0'
-  compile 'com.facebook.android:facebook-places:5.9.0'
-  compile 'com.facebook.android:facebook-messenger:5.9.0'
+  compile 'com.facebook.android:facebook-core:6.5.1'
+  compile 'com.facebook.android:facebook-login:6.5.1'
+  compile 'com.facebook.android:facebook-share:6.5.1'
+  compile 'com.facebook.android:facebook-messenger:6.5.1'
+  compile 'com.facebook.android:facebook-applinks:6.5.1'
 }
