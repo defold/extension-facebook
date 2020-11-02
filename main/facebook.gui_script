@@ -1,5 +1,13 @@
 local dirtylarry = require "dirtylarry/dirtylarry"
 
+local function update_access_token(self)
+	if facebook and facebook.access_token() then
+		gui.set_text(gui.get_node("access_token"), "Access token found")
+	else
+		gui.set_text(gui.get_node("access_token"), "")
+	end
+end
+
 function init(self)
 	gui.set_render_order(15)
 	self.root = gui.get_node("root")
@@ -7,6 +15,8 @@ function init(self)
 
 	local n = gui.get_node("version")
 	gui.set_text(n, facebook.get_version())
+
+	update_access_token(self)
 end
 
 function on_message(self, message_id, message, sender)
@@ -29,6 +39,7 @@ local function fb_login(self, data)
 	else
 		gui.set_text(gui.get_node("error"), "fb_login - no error")
 	end
+	update_access_token(self)
 end
 
 local function get_name_callback(self, id, response)
@@ -84,6 +95,9 @@ local function deferred_deep_link(self, result, error)
 end
 
 function on_input(self, action_id, action)
+	if not action_id then
+		return
+	end
 	-- TODO add buttons for game requests
 
 	-- https://developers.facebook.com/docs/facebook-login/permissions/#reference-default
@@ -160,15 +174,15 @@ function on_input(self, action_id, action)
 		gui.set_text(gui.get_node("status"), "no status")
 		gui.set_text(gui.get_node("error"), "no error")
 		gui.set_text(gui.get_node("name"), "")
+		update_access_token(self)
 	end)
 
 	dirtylarry:button("read_name", action_id, action, function ()
-		local token = ""
-		if facebook.access_token() then
-			token = facebook.access_token()
+		local token = facebook.access_token()
+		if token then
+			local url = "https://graph.facebook.com/me/?access_token=".. token
+			http.request(url, "GET", get_name_callback)
 		end
-		local url = "https://graph.facebook.com/me/?access_token=".. token
-		http.request(url, "GET", get_name_callback)
 	end)
 
 	dirtylarry:button("permissions", action_id, action, function ()
@@ -183,12 +197,6 @@ function on_input(self, action_id, action)
 	dirtylarry:button("deferredlinkapp", action_id, action, function ()
 		facebook.deferred_deep_link(deferred_deep_link)
 	end)
-
-	if facebook and facebook.access_token() then
-		gui.set_text(gui.get_node("access_token"), "Access token found")
-	else
-		gui.set_text(gui.get_node("access_token"), "")
-	end
 end
 
 function on_reload(self)
