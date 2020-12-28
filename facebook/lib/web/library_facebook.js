@@ -63,15 +63,15 @@ var LibraryFacebook = {
                         var delta = (currentTimeStamp - FBinner.loginTimestamp) / 1000;
                         if (delta >= response.reauthorize_required_in) {
                             FBinner.needsReauth = true;
-                            {{{ makeDynCall('vii', 'callback') }}} (lua_state, 0);
+                            dynCall('vii', callback, [lua_state, 0]);
                             return;
                         }
                     }
 
                     var buf = allocate(intArrayFromString(access_token), 'i8', ALLOC_STACK);
-                    {{{ makeDynCall('vii', 'callback') }}} (lua_state, buf);
+                    dynCall('vii', callback, [lua_state, buf]);
                 } else {
-                    {{{ makeDynCall('vii', 'callback') }}} (lua_state, 0);
+                    dynCall('vii', callback, [lua_state, 0]);
                 }
             } catch (e){
                 console.error("Facebook access token failed " + e);
@@ -91,10 +91,10 @@ var LibraryFacebook = {
                     if(e == 0) {
                         var res_data = JSON.stringify(response);
                         var res_buf = allocate(intArrayFromString(res_data), 'i8', ALLOC_STACK);
-                        {{{ makeDynCall('viii', 'callback') }}} (lua_state, res_buf, e);
+                        dynCall('viii', callback, [lua_state, res_buf, e]);
                     } else {
                         var error = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
-                        {{{ makeDynCall('viii', 'callback') }}} (lua_state, 0, error);
+                        dynCall('viii', callback, [lua_state, 0, error]);
                     }
                 });
             } catch (e) {
@@ -161,19 +161,19 @@ var LibraryFacebook = {
                         window._dmFacebookUpdatePermissions(function (_error, _permissions) {
                             if (_error == 0) {
                                 var permissionsbuf = allocate(intArrayFromString(_permissions), 'i8', ALLOC_STACK);
-                                {{{ makeDynCall('viiii', 'callback') }}} (thread, state_open, 0, permissionsbuf);
+                                dynCall('viiii', callback, [thread, state_open, 0, permissionsbuf]);
                             } else {
                                 var errbuf = allocate(intArrayFromString(_error), 'i8', ALLOC_STACK);
-                                {{{ makeDynCall('viiii', 'callback') }}} (thread, state_failed, errbuf, 0);
+                                dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
                             }
                         });
                     } else if (error != 0) {
                         var errbuf = allocate(intArrayFromString(error), 'i8', ALLOC_STACK);
-                        {{{ makeDynCall('viiii', 'callback') }}} (thread, state_closed, errbuf, 0);
+                        dynCall('viiii', callback, [thread, state_closed, errbuf, 0]);
                     } else {
                         var errmsg = "Login was cancelled";
                         var errbuf = allocate(intArrayFromString(errmsg), 'i8', ALLOC_STACK);
-                        {{{ makeDynCall('viiii', 'callback') }}} (thread, state_failed, errbuf, 0);
+                        dynCall('viiii', callback, [thread, state_failed, errbuf, 0]);
                     }
                 }, opts);
             } catch (error) {
