@@ -23,7 +23,7 @@
         var fb = document.createElement('script');
         fb.type = 'text/javascript';
         fb.src = '//connect.facebook.net/en_US/sdk.js';
-        fb.onload = load_engine;
+        fb.onload = (typeof load_engine === "function") ? load_engine : EngineLoader.load;
         document.head.appendChild(fb);
     </script>
 </body>
