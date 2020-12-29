@@ -19,11 +19,23 @@
 </head>
 <body>
     <script id='engine-start' type='text/javascript' merge='keep'>
+        var loaded = false;
+        var onload = function() {
+            if (!loaded) {
+                if((typeof load_engine === "function")) {
+                    load_engine();
+                }
+                else {
+                    EngineLoader.load("canvas", "{{exe-name}}");
+                }
+                loaded = true;
+            }
+        };
         // Load Facebook API
         var fb = document.createElement('script');
         fb.type = 'text/javascript';
         fb.src = '//connect.facebook.net/en_US/sdk.js';
-        fb.onload = (typeof load_engine === "function") ? load_engine : EngineLoader.load;
+        fb.onload = onload;
         document.head.appendChild(fb);
     </script>
 </body>
