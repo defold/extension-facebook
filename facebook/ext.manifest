@@ -10,7 +10,7 @@ platforms:
             frameworks: ['Security', 'Accelerate']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
             flags: ['-fcxx-modules', '-fmodules']
-            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift']
+            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
     arm64-ios:
@@ -18,7 +18,7 @@ platforms:
             frameworks: ['Security', 'Accelerate']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
             flags: ['-fcxx-modules', '-fmodules']
-            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift']
+            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
     x86_64-ios:
@@ -26,7 +26,7 @@ platforms:
             frameworks: ['Security', 'Accelerate']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
             flags: ['-fcxx-modules', '-fmodules']
-            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift']
+            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
 

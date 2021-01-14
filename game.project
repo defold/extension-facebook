@@ -1,6 +1,7 @@
 [project]
 dependencies = https://github.com/andsve/dirtylarry/archive/master.zip,
 title = extension-facebook
+bundle_resources = /facebook/bundle_res
 
 [bootstrap]
 main_collection = /main/main.collectionc
