@@ -13,4 +13,5 @@ builtins
 _site
 Gemfile.lock
 facebook/libhelper/android/build/**
-/bundle-dir
+/bundle*
+bob*.jar
