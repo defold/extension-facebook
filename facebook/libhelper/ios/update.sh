@@ -18,7 +18,9 @@ rm -rf $TMP
 
 # These are the ones that XCode resolved and put into the Frameworks folder when using the above mentioned frameworks
 SDK=${DYNAMO_HOME}/ext/SDKs/XcodeDefault12.1.xctoolchain
-DST=../../bundle_res/ios/Frameworks
+DST=../../res/ios/Frameworks
+
+mkdir -p $DST
 
 ${SDK}/usr/bin/bitcode_strip ${SDK}/usr/lib/swift-5.0/iphoneos/libswiftAVFoundation.dylib -r -o ${DST}/libswiftAVFoundation.dylib
 ${SDK}/usr/bin/bitcode_strip ${SDK}/usr/lib/swift-5.0/iphoneos/libswiftAccelerate.dylib -r -o ${DST}/libswiftAccelerate.dylib
