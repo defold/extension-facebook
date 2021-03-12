@@ -75,6 +75,7 @@ static void PushJsonCommand(dmScript::LuaCallbackInfo* callback, const char* res
     }
 
     - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+        [FBSDKApplicationDelegate initializeSDK:launchOptions];
         if(!g_Facebook.m_Login)
         {
             return false;
