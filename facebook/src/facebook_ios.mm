@@ -1,5 +1,6 @@
 #if defined(DM_PLATFORM_IOS)
 
+#include <dmsdk/dlib/hash.h>
 #include <dmsdk/dlib/log.h>
 #include <dmsdk/script/script.h>
 #include <dmsdk/extension/extension.h>

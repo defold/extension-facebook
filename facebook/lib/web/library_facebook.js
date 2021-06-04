@@ -68,7 +68,7 @@ var LibraryFacebook = {
                         }
                     }
 
-                    var buf = allocate(intArrayFromString(access_token), 'i8', ALLOC_STACK);
+                    var buf = allocate(intArrayFromString(access_token), ALLOC_STACK);
                     {{{ makeDynCall('vii', 'callback') }}}(lua_state, buf);
                 } else {
                     {{{ makeDynCall('vii', 'callback') }}}(lua_state, 0);
@@ -90,10 +90,10 @@ var LibraryFacebook = {
                     var e = (response && response.error ? response.error.message : 0);
                     if(e == 0) {
                         var res_data = JSON.stringify(response);
-                        var res_buf = allocate(intArrayFromString(res_data), 'i8', ALLOC_STACK);
+                        var res_buf = allocate(intArrayFromString(res_data), ALLOC_STACK);
                         {{{ makeDynCall('viii', 'callback') }}}(lua_state, res_buf, e);
                     } else {
-                        var error = allocate(intArrayFromString(e), 'i8', ALLOC_STACK);
+                        var error = allocate(intArrayFromString(e), ALLOC_STACK);
                         {{{ makeDynCall('viii', 'callback') }}}(lua_state, 0, error);
                     }
                 });
@@ -160,19 +160,19 @@ var LibraryFacebook = {
 
                         window._dmFacebookUpdatePermissions(function (_error, _permissions) {
                             if (_error == 0) {
-                                var permissionsbuf = allocate(intArrayFromString(_permissions), 'i8', ALLOC_STACK);
+                                var permissionsbuf = allocate(intArrayFromString(_permissions), ALLOC_STACK);
                                 {{{ makeDynCall('viiii', 'callback') }}}(thread, state_open, 0, permissionsbuf);
                             } else {
-                                var errbuf = allocate(intArrayFromString(_error), 'i8', ALLOC_STACK);
+                                var errbuf = allocate(intArrayFromString(_error), ALLOC_STACK);
                                 {{{ makeDynCall('viiii', 'callback') }}}(thread, state_failed, errbuf, 0);
                             }
                         });
                     } else if (error != 0) {
-                        var errbuf = allocate(intArrayFromString(error), 'i8', ALLOC_STACK);
+                        var errbuf = allocate(intArrayFromString(error), ALLOC_STACK);
                         {{{ makeDynCall('viiii', 'callback') }}}(thread, state_closed, errbuf, 0);
                     } else {
                         var errmsg = "Login was cancelled";
-                        var errbuf = allocate(intArrayFromString(errmsg), 'i8', ALLOC_STACK);
+                        var errbuf = allocate(intArrayFromString(errmsg), ALLOC_STACK);
                         {{{ makeDynCall('viiii', 'callback') }}}(thread, state_failed, errbuf, 0);
                     }
                 }, opts);
