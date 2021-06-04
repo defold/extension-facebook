@@ -170,7 +170,7 @@ function on_input(self, action_id, action)
 
 	dirtylarry:button("share", action_id, action, function ()
 		print("share")
-		local param = { link = "https://www.defold.com",picture="https://www.defold.com/static/base/blossom.jpg" }
+		local param = { link = "https://www.defold.com",picture="https://defold.com/images/logo/defold/logo/logo-ver-classic-white-160.png" }
 		facebook.show_dialog("feed", param, fb_share)
 	end)
 
