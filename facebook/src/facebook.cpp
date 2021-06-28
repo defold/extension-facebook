@@ -60,8 +60,25 @@ static int Facebook_FetchDeferredAppLinkData(lua_State* L)
     return 0;
 }
 
+static int Facebook_Init(lua_State* L)
+{
+    DM_LUA_STACK_CHECK(L, 0);
+
+    if (Platform_FacebookInitialized())
+    {
+        return 0;
+    }
+
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 1);
+
+    Platform_FetchDeferredAppLinkData(L, callback);
+
+    return 0;
+}
+
 static const luaL_reg Facebook_methods[] =
 {
+    {"init", Facebook_Init},
     {"get_version", Facebook_GetVersion},
     {"logout", Facebook_Logout},
     {"access_token", Facebook_AccessToken},
@@ -140,7 +157,16 @@ static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
 static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
 {
     dmFacebook::LuaInit(params->m_L);
-    return Platform_InitializeFacebook(params);
+    dmExtension::Result r = Platform_InitializeFacebook(params);
+    if (r == dmExtension::RESULT_OK)
+    {
+        const int autoinit = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.autoinit", 1);
+        if (autoinit)
+        {
+            dmFacebook::Facebook_Init(params->m_L)
+        }
+    }
+    return r;
 }
 
 static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
@@ -167,4 +193,3 @@ extern "C" void FacebookExtExternal()
 }
 
 #endif
-

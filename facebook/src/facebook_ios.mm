@@ -27,6 +27,7 @@ struct Facebook
     dmFacebook::CommandQueue    m_CommandQueue;
     FacebookAppDelegate*        m_Delegate;
     int                         m_DisableFaceBookEvents;
+    char*                       m_AppId;
 
 };
 
@@ -346,11 +347,6 @@ static void LoginCallback(dmScript::LuaCallbackInfo* callback, FBSDKLoginManager
 
 namespace dmFacebook {
 
-bool PlatformFacebookInitialized()
-{
-    return !!g_Facebook.m_Login;
-}
-
 void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback)
 {
@@ -604,15 +600,22 @@ bool Platform_FacebookInitialized()
     return g_Facebook.m_Login != 0;
 }
 
+
+int Facebook_Init(lua_State* L)
+{
+    DM_LUA_STACK_CHECK(L, 0);
+    if (g_Facebook.m_Login == 0)
+    {
+        g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
+    }
+    return 0;
+}
+
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
 {
-    (void)app_id;
-
-    dmFacebook::QueueCreate(&g_Facebook.m_CommandQueue);
-
+    g_Facebook.m_AppId = app_id;
     g_Facebook.m_DisableFaceBookEvents = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.disable_events", 0);
-
-    g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
+    dmFacebook::QueueCreate(&g_Facebook.m_CommandQueue);
 
     return dmExtension::RESULT_OK;
 }
@@ -620,14 +623,15 @@ dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* param
 
 dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
 {
-    if(!g_Facebook.m_Login)
+    if(g_Facebook.m_Login)
     {
-        return dmExtension::RESULT_OK;
+        [g_Facebook.m_Login release];
     }
 
-    [g_Facebook.m_Login release];
-
-    dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
+    if(g_Facebook.m_CommandQueue)
+    {
+        dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
+    }
     return dmExtension::RESULT_OK;
 }
 

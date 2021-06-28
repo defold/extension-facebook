@@ -73,11 +73,6 @@ int Facebook_Logout(lua_State* L)
     return 0;
 }
 
-bool PlatformFacebookInitialized()
-{
-    return !!g_Facebook.m_appId;
-}
-
 static void OnLoginWithPermissions(dmScript::LuaCallbackInfo* callback, int status, const char* error, const char* permissions_json)
 {
     if (permissions_json != 0x0)
@@ -259,10 +254,23 @@ bool Platform_FacebookInitialized()
     return g_Facebook.m_Initialized;
 }
 
+int Facebook_Init(lua_State* L)
+{
+    DM_LUA_STACK_CHECK(L, 0);
+    if(!g_Facebook.m_Initialized)
+    {
+        dmFacebookInitialize(g_Facebook.m_appId, dmFacebook::GRAPH_API_VERSION);
+        dmLogDebug("FB initialized.");
+        g_Facebook.m_Initialized = true;
+    }
+
+    return 0;
+}
+
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
 {
     (void)params;
-    (void)app_id;
+    g_Facebook.m_appId = app_id;
     return dmExtension::RESULT_OK;
 }
 
@@ -274,20 +282,6 @@ dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
 
 dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params)
 {
-    if(!g_Facebook.m_Initialized)
-    {
-        g_Facebook.m_appId = dmConfigFile::GetString(params->m_ConfigFile, "facebook.appid", 0); // Not sure if we need to initialize facebook this late /mawe
-        if( g_Facebook.m_appId )
-        {
-            dmFacebookInitialize(g_Facebook.m_appId, dmFacebook::GRAPH_API_VERSION);
-            dmLogDebug("FB initialized.");
-            g_Facebook.m_Initialized = true;
-        }
-        else
-        {
-            dmLogDebug("No facebook.appid. Disabling module");
-        }
-    }
 
     return dmExtension::RESULT_OK;
 }

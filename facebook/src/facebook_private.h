@@ -130,6 +130,7 @@ namespace dmFacebook {
 
 */
 
+    int Facebook_Init(lua_State* L);
     int Facebook_Logout(lua_State* L);
     int Facebook_AccessToken(lua_State* L);
     int Facebook_Permissions(lua_State* L);
