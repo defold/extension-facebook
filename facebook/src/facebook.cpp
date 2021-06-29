@@ -9,14 +9,56 @@
 
 namespace dmFacebook {
 
+#define CHECK_FACEBOOK_INIT(_L_) \
+    if (!Platform_FacebookInitialized()) return luaL_error(_L_, "Facebook has not been initialized, is facebook.appid set in game.project?");
+
+static int Facebook_AccessToken(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookAccessToken(L);
+}
+
+static int Facebook_Logout(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookLogout(L);
+}
+
+static int Facebook_Permissions(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookPermissions(L);
+}
+
+static int Facebook_PostEvent(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookPostEvent(L);
+}
+
+static int Facebook_EnableEventUsage(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookEnableEventUsage(L);
+}
+
+static int Facebook_DisableEventUsage(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookDisableEventUsage(L);
+}
+
+static int Facebook_ShowDialog(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_FacebookShowDialog(L);
+}
+
 static int Facebook_LoginWithPermissions(lua_State* L)
 {
-    if (!Platform_FacebookInitialized())
-    {
-        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
-    }
-
     DM_LUA_STACK_CHECK(L, 0);
+    CHECK_FACEBOOK_INIT(L);
+
     luaL_checktype(L, 1, LUA_TTABLE);
     luaL_checktype(L, 2, LUA_TNUMBER);
     dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 3);
@@ -41,17 +83,24 @@ static int Facebook_LoginWithPermissions(lua_State* L)
 
 static int Facebook_GetVersion(lua_State* L)
 {
+    DM_LUA_STACK_CHECK(L, 1);
+    CHECK_FACEBOOK_INIT(L);
+
     const char* version = Platform_GetVersion();
     if (!version)
+    {
         return luaL_error(L, "get_version not supported");
+    }
     lua_pushstring(L, version);
     free((void*)version);
+
     return 1;
 }
 
 static int Facebook_FetchDeferredAppLinkData(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
+    CHECK_FACEBOOK_INIT(L);
 
     dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 1);
 
@@ -60,8 +109,22 @@ static int Facebook_FetchDeferredAppLinkData(lua_State* L)
     return 0;
 }
 
+static int Facebook_Init(lua_State* L)
+{
+    DM_LUA_STACK_CHECK(L, 0);
+
+    if (Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook has already been initialized");
+    }
+    Platform_FacebookInit(L);
+
+    return 0;
+}
+
 static const luaL_reg Facebook_methods[] =
 {
+    {"init", Facebook_Init},
     {"get_version", Facebook_GetVersion},
     {"logout", Facebook_Logout},
     {"access_token", Facebook_AccessToken},
@@ -140,7 +203,16 @@ static dmExtension::Result AppFinalizeFacebook(dmExtension::AppParams* params)
 static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
 {
     dmFacebook::LuaInit(params->m_L);
-    return Platform_InitializeFacebook(params);
+    dmExtension::Result r = Platform_InitializeFacebook(params);
+    if (r == dmExtension::RESULT_OK)
+    {
+        const int autoinit = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.autoinit", 1);
+        if (autoinit)
+        {
+            dmFacebook::Facebook_Init(params->m_L);
+        }
+    }
+    return r;
 }
 
 static dmExtension::Result FinalizeFacebook(dmExtension::Params* params)
@@ -167,4 +239,3 @@ extern "C" void FacebookExtExternal()
 }
 
 #endif
-

@@ -83,6 +83,12 @@
 
 #*****************************************************************************************************
 
+  - name: init
+    type: function
+    desc: Initialize Facebook SDK (if facebook.autoinit is 0 in game.project)
+
+#*****************************************************************************************************
+
   - name: access_token
     type: function
     desc: Get the current Facebook access token.
@@ -383,7 +389,7 @@
   - name: deferred_deep_link
     type: function
     desc: Allows receiving deferred deep link URL and parameters.
-          
+
           [More info about Referred Deep Links](https://developers.facebook.com/docs/app-ads/deep-linking/)
 
     parameters:
@@ -406,11 +412,11 @@
               - name: extras
                 type: table
                 desc: the full set of arguments for this app link. Properties like target uri & ref are typically picked out of this set of arguments.
-                  
+
               - name: target_url
                 type: string
                 desc: target uri for this App Link.
-                
+
           - name: error
             type: table
             desc: Error message. If there is no error, `error` is `nil`.

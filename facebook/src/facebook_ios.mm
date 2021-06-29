@@ -27,6 +27,7 @@ struct Facebook
     dmFacebook::CommandQueue    m_CommandQueue;
     FacebookAppDelegate*        m_Delegate;
     int                         m_DisableFaceBookEvents;
+    const char*                 m_AppId;
 
 };
 
@@ -344,14 +345,7 @@ static void LoginCallback(dmScript::LuaCallbackInfo* callback, FBSDKLoginManager
 // Lua API
 //
 
-namespace dmFacebook {
-
-bool PlatformFacebookInitialized()
-{
-    return !!g_Facebook.m_Login;
-}
-
-void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
+int Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback)
 {
     // This function must always return so memory for `permissions` can be free'd.
@@ -364,7 +358,7 @@ void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permission
             [g_Facebook.m_Login reauthorizeDataAccess:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
                 LoginCallback(callback, result, error);
             }];
-            return;
+            return 0;
         }
     }
 
@@ -384,9 +378,10 @@ void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permission
         NSString* errorMessage = [NSString stringWithFormat:@"Unable to request permissions: %@", exception.reason];
         dmFacebook::RunStatusCallback(callback, [errorMessage UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
     }
+    return 0;
 }
 
-void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
+int Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
 {
     g_Facebook.m_Delegate.m_Callback = callback;
     [FBSDKAppLinkUtility fetchDeferredAppLink:^(NSURL *url, NSError *error) {
@@ -430,10 +425,10 @@ void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* 
         }
         PushJsonCommand(callback, result?strdup(result):0, errorMsg?strdup(errorMsg):0);
     }];
-
+    return 0;
 }
 
-int Facebook_Logout(lua_State* L)
+int Platform_FacebookLogout(lua_State* L)
 {
     if(!g_Facebook.m_Login)
     {
@@ -443,7 +438,7 @@ int Facebook_Logout(lua_State* L)
     return 0;
 }
 
-int Facebook_AccessToken(lua_State* L)
+int Platform_FacebookAccessToken(lua_State* L)
 {
     if(!g_Facebook.m_Login)
     {
@@ -460,7 +455,7 @@ int Facebook_AccessToken(lua_State* L)
     return 1;
 }
 
-int Facebook_Permissions(lua_State* L)
+int Platform_FacebookPermissions(lua_State* L)
 {
     if(!g_Facebook.m_Login)
     {
@@ -482,7 +477,7 @@ int Facebook_Permissions(lua_State* L)
     return 1;
 }
 
-int Facebook_PostEvent(lua_State* L)
+int Platform_FacebookPostEvent(lua_State* L)
 {
     int argc = lua_gettop(L);
     const char* event = dmFacebook::Analytics::GetEvent(L, 1);
@@ -515,26 +510,22 @@ int Facebook_PostEvent(lua_State* L)
     return 0;
 }
 
-int Facebook_EnableEventUsage(lua_State* L)
+int Platform_FacebookEnableEventUsage(lua_State* L)
 {
     [FBSDKSettings setLimitEventAndDataUsage:false];
 
     return 0;
 }
 
-int Facebook_DisableEventUsage(lua_State* L)
+int Platform_FacebookDisableEventUsage(lua_State* L)
 {
     [FBSDKSettings setLimitEventAndDataUsage:true];
 
     return 0;
 }
 
-int Facebook_ShowDialog(lua_State* L)
+int Platform_FacebookShowDialog(lua_State* L)
 {
-    if(!g_Facebook.m_Login)
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
     int top = lua_gettop(L);
 
     dmhash_t dialog = dmHashString64(luaL_checkstring(L, 1));
@@ -591,8 +582,6 @@ int Facebook_ShowDialog(lua_State* L)
     return 0;
 }
 
-} // namespace
-
 const char* Platform_GetVersion()
 {
     const char* version = (const char*)[[FBSDKSettings sdkVersion] UTF8String];
@@ -604,15 +593,19 @@ bool Platform_FacebookInitialized()
     return g_Facebook.m_Login != 0;
 }
 
+
+int Platform_FacebookInit(lua_State* L)
+{
+    DM_LUA_STACK_CHECK(L, 0);
+    g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
+    return 0;
+}
+
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)
 {
-    (void)app_id;
-
-    dmFacebook::QueueCreate(&g_Facebook.m_CommandQueue);
-
+    g_Facebook.m_AppId = app_id;
     g_Facebook.m_DisableFaceBookEvents = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.disable_events", 0);
-
-    g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
+    dmFacebook::QueueCreate(&g_Facebook.m_CommandQueue);
 
     return dmExtension::RESULT_OK;
 }
@@ -620,12 +613,10 @@ dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* param
 
 dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
 {
-    if(!g_Facebook.m_Login)
+    if(g_Facebook.m_Login)
     {
-        return dmExtension::RESULT_OK;
+        [g_Facebook.m_Login release];
     }
-
-    [g_Facebook.m_Login release];
 
     dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
     return dmExtension::RESULT_OK;
