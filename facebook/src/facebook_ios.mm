@@ -27,7 +27,7 @@ struct Facebook
     dmFacebook::CommandQueue    m_CommandQueue;
     FacebookAppDelegate*        m_Delegate;
     int                         m_DisableFaceBookEvents;
-    char*                       m_AppId;
+    const char*                 m_AppId;
 
 };
 
@@ -618,10 +618,7 @@ dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
         [g_Facebook.m_Login release];
     }
 
-    if(g_Facebook.m_CommandQueue)
-    {
-        dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
-    }
+    dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
     return dmExtension::RESULT_OK;
 }
 
