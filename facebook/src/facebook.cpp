@@ -9,6 +9,69 @@
 
 namespace dmFacebook {
 
+static int Facebook_AccessToken(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookAccessToken(L);
+}
+
+static int Facebook_Logout(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookLogout(L);
+}
+
+static int Facebook_Permissions(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookPermissions(L);
+}
+
+static int Facebook_PostEvent(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookPostEvent(L);
+}
+
+static int Facebook_EnableEventUsage(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookEnableEventUsage(L);
+}
+
+static int Facebook_DisableEventUsage(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookDisableEventUsage(L);
+}
+
+static int Facebook_ShowDialog(lua_State* L)
+{
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+    return Platform_FacebookShowDialog(L);
+}
+
 static int Facebook_LoginWithPermissions(lua_State* L)
 {
     if (!Platform_FacebookInitialized())
@@ -41,17 +104,32 @@ static int Facebook_LoginWithPermissions(lua_State* L)
 
 static int Facebook_GetVersion(lua_State* L)
 {
+    DM_LUA_STACK_CHECK(L, 1);
+
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
+
     const char* version = Platform_GetVersion();
     if (!version)
+    {
         return luaL_error(L, "get_version not supported");
+    }
     lua_pushstring(L, version);
     free((void*)version);
+
     return 1;
 }
 
 static int Facebook_FetchDeferredAppLinkData(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
+
+    if (!Platform_FacebookInitialized())
+    {
+        return luaL_error(L, "Facebook module has not been initialized, is facebook.appid set in game.project?");
+    }
 
     dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 1);
 
@@ -64,14 +142,10 @@ static int Facebook_Init(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
 
-    if (Platform_FacebookInitialized())
+    if (!Platform_FacebookInitialized())
     {
-        return 0;
+        Platform_FacebookInit(L);
     }
-
-    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 1);
-
-    Platform_FetchDeferredAppLinkData(L, callback);
 
     return 0;
 }
@@ -163,7 +237,7 @@ static dmExtension::Result InitializeFacebook(dmExtension::Params* params)
         const int autoinit = dmConfigFile::GetInt(params->m_ConfigFile, "facebook.autoinit", 1);
         if (autoinit)
         {
-            dmFacebook::Facebook_Init(params->m_L)
+            dmFacebook::Facebook_Init(params->m_L);
         }
     }
     return r;

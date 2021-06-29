@@ -52,15 +52,8 @@ extern "C" {
     void dmFacebookDisableEventUsage();
 }
 
-namespace dmFacebook
+int Platform_FacebookLogout(lua_State* L)
 {
-
-int Facebook_Logout(lua_State* L)
-{
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
     int top = lua_gettop(L);
 
     dmFacebookDoLogout();
@@ -84,7 +77,7 @@ static void OnLoginWithPermissions(dmScript::LuaCallbackInfo* callback, int stat
     dmScript::DestroyCallback(callback);
 }
 
-void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
+int Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions,
     uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback)
 {
     char cstr_permissions[2048];
@@ -95,6 +88,7 @@ void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permission
     dmFacebookLoginWithPermissions(
         dmFacebook::STATE_OPEN, dmFacebook::STATE_CLOSED, dmFacebook::STATE_CLOSED_LOGIN_FAILED,
         cstr_permissions, (OnLoginWithPermissionsCallback) OnLoginWithPermissions, callback);
+    return 0;
 }
 
 static void OnAccessTokenComplete(void* L, const char* access_token)
@@ -110,12 +104,8 @@ static void OnAccessTokenComplete(void* L, const char* access_token)
     }
 }
 
-int Facebook_AccessToken(lua_State* L)
+int Platform_FacebookAccessToken(lua_State* L)
 {
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
     DM_LUA_STACK_CHECK(L, 1);
 
     dmFacebookAccessToken( (OnAccessTokenCallback) OnAccessTokenComplete, L);
@@ -123,12 +113,8 @@ int Facebook_AccessToken(lua_State* L)
     return 1;
 }
 
-int Facebook_Permissions(lua_State* L)
+int Platform_FacebookPermissions(lua_State* L)
 {
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
     DM_LUA_STACK_CHECK(L, 1);
 
     if(g_Facebook.m_PermissionsJson != 0)
@@ -156,12 +142,8 @@ static void OnShowDialogComplete(dmScript::LuaCallbackInfo* callback, const char
     dmScript::DestroyCallback(callback);
 }
 
-int Facebook_ShowDialog(lua_State* L)
+int Platform_FacebookShowDialog(lua_State* L)
 {
-    if( !g_Facebook.m_appId )
-    {
-        return luaL_error(L, "Facebook module isn't initialized! Did you set the facebook.appid in game.project?");
-    }
     DM_LUA_STACK_CHECK(L, 0);
 
     const char* dialog = luaL_checkstring(L, 1);
@@ -193,7 +175,7 @@ int Facebook_ShowDialog(lua_State* L)
     return 0;
 }
 
-int Facebook_PostEvent(lua_State* L)
+int Platform_FacebookPostEvent(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
     int argc = lua_gettop(L);
@@ -223,21 +205,21 @@ int Facebook_PostEvent(lua_State* L)
     return 0;
 }
 
-int Facebook_EnableEventUsage(lua_State* L)
+int Platform_FacebookEnableEventUsage(lua_State* L)
 {
     dmFacebookEnableEventUsage();
 
     return 0;
 }
 
-int Facebook_DisableEventUsage(lua_State* L)
+int Platform_FacebookDisableEventUsage(lua_State* L)
 {
     dmFacebookDisableEventUsage();
 
     return 0;
 }
 
-void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
+void Platform_PlatformFetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
 {
     dmLogOnceDebug("get_deferred_app_link() function isn't supported on HTML5 platform");
 }
@@ -254,15 +236,13 @@ bool Platform_FacebookInitialized()
     return g_Facebook.m_Initialized;
 }
 
-int Facebook_Init(lua_State* L)
+int Platform_FacebookInit(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
-    if(!g_Facebook.m_Initialized)
-    {
-        dmFacebookInitialize(g_Facebook.m_appId, dmFacebook::GRAPH_API_VERSION);
-        dmLogDebug("FB initialized.");
-        g_Facebook.m_Initialized = true;
-    }
+
+    dmFacebookInitialize(g_Facebook.m_appId, dmFacebook::GRAPH_API_VERSION);
+    dmLogDebug("FB initialized.");
+    g_Facebook.m_Initialized = true;
 
     return 0;
 }

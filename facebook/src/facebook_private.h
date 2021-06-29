@@ -130,21 +130,21 @@ namespace dmFacebook {
 
 */
 
-    int Facebook_Init(lua_State* L);
-    int Facebook_Logout(lua_State* L);
-    int Facebook_AccessToken(lua_State* L);
-    int Facebook_Permissions(lua_State* L);
-    int Facebook_PostEvent(lua_State* L);
-    int Facebook_EnableEventUsage(lua_State* L);
-    int Facebook_DisableEventUsage(lua_State* L);
-    int Facebook_ShowDialog(lua_State* L);
-
-    void Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback);
-    void Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback);
 }
 
 // Caller must free the returned memory!
 const char* Platform_GetVersion();
+
+int Platform_FacebookInit(lua_State* L);
+int Platform_FacebookLogout(lua_State* L);
+int Platform_FacebookAccessToken(lua_State* L);
+int Platform_FacebookPermissions(lua_State* L);
+int Platform_FacebookPostEvent(lua_State* L);
+int Platform_FacebookEnableEventUsage(lua_State* L);
+int Platform_FacebookDisableEventUsage(lua_State* L);
+int Platform_FacebookShowDialog(lua_State* L);
+int Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback);
+int Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback);
 
 bool                Platform_FacebookInitialized();
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id);

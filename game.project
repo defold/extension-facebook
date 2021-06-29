@@ -1,6 +1,6 @@
 [project]
-dependencies = https://github.com/andsve/dirtylarry/archive/master.zip,
 title = extension-facebook
+dependencies#0 = https://github.com/andsve/dirtylarry/archive/master.zip
 
 [bootstrap]
 main_collection = /main/main.collectionc
@@ -24,7 +24,7 @@ include_dirs = facebook
 
 [facebook]
 appid = 1609643756005877
+autoinit = 0
 
 [native_extension]
 app_manifest = /generated.appmanifest
-
