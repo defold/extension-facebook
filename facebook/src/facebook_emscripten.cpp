@@ -82,7 +82,7 @@ int Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions
 {
     char cstr_permissions[2048];
     cstr_permissions[0] = 0x0;
-    JoinCStringArray(permissions, permission_count, cstr_permissions,
+    dmFacebook::JoinCStringArray(permissions, permission_count, cstr_permissions,
         sizeof(cstr_permissions) / sizeof(cstr_permissions[0]), ",");
 
     dmFacebookLoginWithPermissions(
@@ -219,12 +219,11 @@ int Platform_FacebookDisableEventUsage(lua_State* L)
     return 0;
 }
 
-void Platform_PlatformFetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
+int Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback)
 {
     dmLogOnceDebug("get_deferred_app_link() function isn't supported on HTML5 platform");
+    return 0;
 }
-
-} // namespace
 
 const char* Platform_GetVersion()
 {
