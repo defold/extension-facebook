@@ -616,6 +616,7 @@ dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
     if(g_Facebook.m_Login)
     {
         [g_Facebook.m_Login release];
+        g_Facebook.m_Login = nil;
     }
 
     dmFacebook::QueueDestroy(&g_Facebook.m_CommandQueue);
