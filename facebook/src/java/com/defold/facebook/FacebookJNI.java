@@ -19,6 +19,7 @@ import com.facebook.appevents.AppEventsLogger;
 import com.facebook.login.DefaultAudience;
 import com.facebook.applinks.AppLinkData;
 import com.facebook.internal.BundleJSONConverter;
+import com.facebook.LoggingBehavior;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -81,8 +82,8 @@ class FacebookAppJNI {
             public void run() {
                 String s = String.format("sdkInitialize: activity %s   appid: %s", FacebookAppJNI.this.activity, FacebookAppJNI.this.appId);
                 Log.d(TAG, s);
-                FacebookSdk.setApplicationId( FacebookAppJNI.this.appId );
-                FacebookSdk.sdkInitialize( FacebookAppJNI.this.activity );
+                FacebookSdk.setApplicationId(FacebookAppJNI.this.appId);
+                FacebookSdk.sdkInitialize(FacebookAppJNI.this.activity);
                 latch.countDown();
             }
         });
@@ -94,15 +95,9 @@ class FacebookAppJNI {
     }
 
     public void activate() {
+        AppEventsLogger.activateApp(this.activity.getApplication());
         String s = String.format("activateApp: activity %s   appid: %s", this.activity, this.appId);
         Log.d(TAG, s);
-        AppEventsLogger.activateApp(this.activity, this.appId);
-    }
-
-    public void deactivate() {
-        String s = String.format("deactivateApp: activity %s   appid: %s", this.activity, this.appId);
-        Log.d(TAG, s);
-        AppEventsLogger.deactivateApp(this.activity, this.appId);
     }
 }
 
@@ -136,7 +131,7 @@ class FacebookJNI {
             if (o instanceof Collection) {
                 return new JSONArray((Collection) o);
             } else if (o.getClass().isArray()) {
-                return new JSONArray(Arrays.asList((Object[])o));
+                return new JSONArray(Arrays.asList((Object[]) o));
             }
             if (o instanceof Map) {
                 return new JSONObject((Map) o);
@@ -294,31 +289,31 @@ class FacebookJNI {
 
     public void fetchDeferredAppLinkData(final long userData) {
         AppLinkData.fetchDeferredAppLinkData(this.activity,
-            new AppLinkData.CompletionHandler() {
-                @Override
-                public void onDeferredAppLinkDataFetched(AppLinkData appLinkData) {
-                    String message = null;
-                    Boolean isError = false;
-                    JSONObject data;
-                    try {
-                        if (appLinkData == null) {
-                            message ="{}";
-                        } else {
-                            data = new JSONObject();
-                            data.put("ref", appLinkData.getRef());
-                            data.put("target_url", appLinkData.getTargetUri().toString());
-                            if (appLinkData.getArgumentBundle() != null) {
-                                data.put("extras", BundleJSONConverter.convertToJSON(appLinkData.getArgumentBundle()));
+                new AppLinkData.CompletionHandler() {
+                    @Override
+                    public void onDeferredAppLinkDataFetched(AppLinkData appLinkData) {
+                        String message = null;
+                        Boolean isError = false;
+                        JSONObject data;
+                        try {
+                            if (appLinkData == null) {
+                                message = "{}";
+                            } else {
+                                data = new JSONObject();
+                                data.put("ref", appLinkData.getRef());
+                                data.put("target_url", appLinkData.getTargetUri().toString());
+                                if (appLinkData.getArgumentBundle() != null) {
+                                    data.put("extras", BundleJSONConverter.convertToJSON(appLinkData.getArgumentBundle()));
+                                }
+                                message = data.toString();
                             }
-                            message = data.toString();
+                        } catch (JSONException e) {
+                            isError = true;
+                            message = "'error':'Error while converting DeferredAppLinkData to JSON:" + e.getMessage() + "'";
                         }
-                    } catch (JSONException e) {
-                        isError = true;
-                        message = "'error':'Error while converting DeferredAppLinkData to JSON:" + e.getMessage()+"'";
+                        onFetchDeferredAppLinkData(userData, message, isError);
                     }
-                    onFetchDeferredAppLinkData(userData, message, isError);
-                }
-            });
+                });
     }
 
 }

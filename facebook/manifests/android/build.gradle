@@ -1,8 +1,8 @@
 dependencies {
-  // https://developers.facebook.com/docs/android/getting-started/
-  compile 'com.facebook.android:facebook-core:9.0.0'
-  compile 'com.facebook.android:facebook-login:9.0.0'
-  compile 'com.facebook.android:facebook-share:9.0.0'
-  compile 'com.facebook.android:facebook-messenger:9.0.0'
-  compile 'com.facebook.android:facebook-applinks:9.0.0'
+    // https://developers.facebook.com/docs/android/getting-started/
+    implementation 'com.facebook.android:facebook-core:12.1.0'
+    implementation 'com.facebook.android:facebook-login:12.1.0'
+    implementation 'com.facebook.android:facebook-share:12.1.0'
+    implementation 'com.facebook.android:facebook-messenger:12.1.0'
+    implementation 'com.facebook.android:facebook-applinks:12.1.0'
 }

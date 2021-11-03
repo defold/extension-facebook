@@ -40,7 +40,6 @@ struct Facebook
 
     jobject m_FBApp;
     jmethodID m_Activate;
-    jmethodID m_Deactivate;
 
     const char* m_AppId;
     int m_RefCount; // depending if we have a shared state or not
@@ -449,7 +448,6 @@ int Platform_FacebookInit(lua_State* L)
         env->DeleteLocalRef(facebook_app_str_class_name);
 
         g_Facebook.m_Activate = env->GetMethodID(fb_app_class, "activate", "()V");
-        g_Facebook.m_Deactivate = env->GetMethodID(fb_app_class, "deactivate", "()V");
 
         jmethodID fb_app_jni_constructor = env->GetMethodID(fb_app_class, "<init>", "(Landroid/app/Activity;Ljava/lang/String;)V");
         jstring str_app_id = env->NewStringUTF(g_Facebook.m_AppId);
@@ -510,10 +508,6 @@ dmExtension::Result Platform_AppFinalizeFacebook(dmExtension::AppParams* params)
     if (g_Facebook.m_FBApp != 0)
     {
         JNIEnv* env = Attach();
-        if(!g_Facebook.m_DisableFaceBookEvents)
-        {
-            env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Deactivate);
-        }
         env->DeleteGlobalRef(g_Facebook.m_FBApp);
 
         javaStatus = !Detach(env);
@@ -571,8 +565,6 @@ void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Ev
 
         if( event->m_Event == dmExtension::EVENT_ID_ACTIVATEAPP )
             env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Activate);
-        else if( event->m_Event == dmExtension::EVENT_ID_DEACTIVATEAPP )
-            env->CallVoidMethod(g_Facebook.m_FBApp, g_Facebook.m_Deactivate);
 
         if (!Detach(env))
         {
