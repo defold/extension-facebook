@@ -29,10 +29,16 @@ void QueuePush(CommandQueue* queue, FacebookCommand* cmd)
 void QueueFlush(CommandQueue* queue, FacebookCommandFn fn, void* ctx)
 {
 	if (queue->m_Commands.Empty())
-		return;
-    DM_MUTEX_SCOPED_LOCK(queue->m_Mutex);
-    queue->m_Commands.Map(fn, ctx);
-    queue->m_Commands.SetSize(0);
+	{
+        return;
+    }
+
+    dmArray<FacebookCommand> tmp;
+    {
+        DM_MUTEX_SCOPED_LOCK(queue->m_Mutex);
+        tmp.Swap(queue->m_Commands);
+    }
+    tmp.Map(fn, ctx);
 }
 
 void HandleCommand(dmFacebook::FacebookCommand* cmd, void* ctx)
