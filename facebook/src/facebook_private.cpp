@@ -8,12 +8,12 @@ namespace dmFacebook
 
 void QueueCreate(CommandQueue* queue)
 {
-	queue->m_Mutex = dmMutex::New();
+    queue->m_Mutex = dmMutex::New();
 }
 
 void QueueDestroy(CommandQueue* queue)
 {
-	dmMutex::Delete(queue->m_Mutex);
+    dmMutex::Delete(queue->m_Mutex);
 }
 
 void QueuePush(CommandQueue* queue, FacebookCommand* cmd)
@@ -28,8 +28,8 @@ void QueuePush(CommandQueue* queue, FacebookCommand* cmd)
 
 void QueueFlush(CommandQueue* queue, FacebookCommandFn fn, void* ctx)
 {
-	if (queue->m_Commands.Empty())
-	{
+    if (queue->m_Commands.Empty())
+    {
         return;
     }
 
