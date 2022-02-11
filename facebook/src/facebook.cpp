@@ -126,7 +126,7 @@ static int Facebook_EnableAdvertiserTracking(lua_State* L)
 {
 #if defined(DM_PLATFORM_IOS) 
     CHECK_FACEBOOK_INIT(L);
-    return Platform_EnableAdvertiserTracking(L);
+    return Platform_FacebookEnableAdvertiserTracking(L);
 #else
     return 0;
 #endif
@@ -136,7 +136,7 @@ static int Facebook_DisableAdvertiserTracking(lua_State* L)
 {
 #if defined(DM_PLATFORM_IOS) 
     CHECK_FACEBOOK_INIT(L);
-    return Platform_DisableAdvertiserTracking(L);
+    return Platform_FacebookDisableAdvertiserTracking(L);
 #else
     return 0;
 #endif
