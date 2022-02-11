@@ -122,6 +122,18 @@ static int Facebook_Init(lua_State* L)
     return 0;
 }
 
+static int Facebook_EnableAdvertiserTracking(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_EnableAdvertiserTracking(L);
+}
+
+static int Facebook_DisableAdvertiserTracking(lua_State* L)
+{
+    CHECK_FACEBOOK_INIT(L);
+    return Platform_DisableAdvertiserTracking(L);
+}
+
 static const luaL_reg Facebook_methods[] =
 {
     {"init", Facebook_Init},
@@ -135,6 +147,8 @@ static const luaL_reg Facebook_methods[] =
     {"show_dialog", Facebook_ShowDialog},
     {"login_with_permissions", Facebook_LoginWithPermissions},
     {"deferred_deep_link", Facebook_FetchDeferredAppLinkData},
+    {"enable_advertiser_tracking", Facebook_EnableAdvertiserTracking},
+    {"disable_advertiser_tracking", Facebook_DisableAdvertiserTracking},
     {0, 0}
 };
 

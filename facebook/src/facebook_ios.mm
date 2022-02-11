@@ -524,6 +524,20 @@ int Platform_FacebookDisableEventUsage(lua_State* L)
     return 0;
 }
 
+int Platform_EnableAdvertiserTracking(lua_State* L)
+{
+    [FBSDKSettings setAdvertiserTrackingEnabled :true];
+
+    return 0;
+}
+
+int Platform_DisableAdvertiserTracking(lua_State* L)
+{
+    [FBSDKSettings setAdvertiserTrackingEnabled :false];
+
+    return 0;
+}
+
 int Platform_FacebookShowDialog(lua_State* L)
 {
     int top = lua_gettop(L);
