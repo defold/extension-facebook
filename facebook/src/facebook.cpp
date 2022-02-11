@@ -124,14 +124,22 @@ static int Facebook_Init(lua_State* L)
 
 static int Facebook_EnableAdvertiserTracking(lua_State* L)
 {
+#if defined(DM_PLATFORM_IOS) 
     CHECK_FACEBOOK_INIT(L);
     return Platform_EnableAdvertiserTracking(L);
+#else
+    return 0;
+#endif
 }
 
 static int Facebook_DisableAdvertiserTracking(lua_State* L)
 {
+#if defined(DM_PLATFORM_IOS) 
     CHECK_FACEBOOK_INIT(L);
     return Platform_DisableAdvertiserTracking(L);
+#else
+    return 0;
+#endif
 }
 
 static const luaL_reg Facebook_methods[] =
