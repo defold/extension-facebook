@@ -246,7 +246,7 @@
   - name: disable_advertiser_tracking
     type: function
     desc: Disable advertiser tracking
-          TThis function will set AdvertiserTrackingEnabled (the 'ATE' flag) to false on iOS, to inform
+          This function will set AdvertiserTrackingEnabled (the 'ATE' flag) to false on iOS, to inform
           Audience Network not to use the data to deliver personalized ads for users on iOS 14 and above.
 
 #*****************************************************************************************************
