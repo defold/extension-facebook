@@ -142,6 +142,8 @@ int Platform_FacebookPermissions(lua_State* L);
 int Platform_FacebookPostEvent(lua_State* L);
 int Platform_FacebookEnableEventUsage(lua_State* L);
 int Platform_FacebookDisableEventUsage(lua_State* L);
+int Platform_FacebookEnableAdvertiserTracking(lua_State* L);
+int Platform_FacebookDisableAdvertiserTracking(lua_State* L);
 int Platform_FacebookShowDialog(lua_State* L);
 int Platform_FacebookLoginWithPermissions(lua_State* L, const char** permissions, uint32_t permission_count, int audience, dmScript::LuaCallbackInfo* callback);
 int Platform_FetchDeferredAppLinkData(lua_State* L, dmScript::LuaCallbackInfo* callback);
