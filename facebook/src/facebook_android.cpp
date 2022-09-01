@@ -282,12 +282,17 @@ int Platform_FacebookPostEvent(lua_State* L)
     {
         jstring jKey = env->NewStringUTF(keys[i]);
         env->SetObjectArrayElement(jKeys, i, jKey);
+        env->DeleteLocalRef(jKey);
         jstring jValue = env->NewStringUTF(values[i]);
         env->SetObjectArrayElement(jValues, i, jValue);
+        env->DeleteLocalRef(jValue);
     }
 
     // Call com.defold.facebook.FacebookJNI.postEvent
     env->CallVoidMethod(g_Facebook.m_FB, g_Facebook.m_PostEvent, jEvent, jValueToSum, jKeys, jValues);
+    env->DeleteLocalRef(jKeys);
+    env->DeleteLocalRef(jValues);
+    env->DeleteLocalRef(jStringClass);
 
     return 0;
 }
