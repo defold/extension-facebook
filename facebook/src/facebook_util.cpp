@@ -1,7 +1,6 @@
 #include "facebook_private.h"
 #include "facebook_util.h"
 #include <dmsdk/dlib/log.h>
-#include <dmsdk/dlib/json.h>
 #include <dmsdk/dlib/dstrings.h>
 #include <dmsdk/script/script.h>
 
@@ -567,18 +566,8 @@ size_t dmFacebook::CountStringArrayLength(lua_State* L, int table_index, size_t&
 
 int dmFacebook::PushLuaTableFromJson(lua_State* L, const char* json)
 {
-    char err_str[512] = {0};
-    int err = 0;
-    dmJson::Document doc;
-    dmJson::Result r = dmJson::Parse(json, &doc);
-    if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-        dmScript::JsonToLua(L, &doc, 0, err_str, sizeof(err_str));
-    } else {
-        dmLogError("Failed to parse JSON (%d): %s", r, err_str);
-        err = 1;
-    }
-    dmJson::Free(&doc);
-    return err;
+    dmScript::JsonToLua(L, json, strlen(json)); // throws lua error if it fails
+    return 0;
 }
 
 void dmFacebook::RunStatusCallback(dmScript::LuaCallbackInfo* callback, const char* error, int status)
@@ -621,25 +610,7 @@ void dmFacebook::RunJsonResultCallback(dmScript::LuaCallbackInfo* callback, cons
     }
     else
     {
-        bool is_fail = false;
-        dmJson::Document doc;
-        dmJson::Result r = dmJson::Parse(json, &doc);
-        if (r == dmJson::RESULT_OK && doc.m_NodeCount > 0) {
-            char error_str_out[128];
-            if (dmScript::JsonToLua(L, &doc, 0, error_str_out, sizeof(error_str_out)) < 0) {
-                dmLogError("Failed converting object JSON to Lua: %s", error_str_out);
-                is_fail = true;
-            }
-        } else {
-            dmLogError("Failed to parse JSON object(%d): (%s)", r, json);
-            is_fail = true;
-        }
-        dmJson::Free(&doc);
-        if (is_fail) {
-            lua_pop(L, 2);
-            dmScript::TeardownCallback(callback);
-            return;
-        }
+        dmScript::JsonToLua(L, json, strlen(json)); // throws lua error if it fails
     }
 
     dmFacebook::PushError(L, error);
