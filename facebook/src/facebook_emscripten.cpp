@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <dmsdk/extension/extension.h>
 #include <dmsdk/dlib/log.h>
-#include <dmsdk/dlib/json.h>
 #include <dmsdk/script/script.h>
 #include <unistd.h>
 #include <stdlib.h>
