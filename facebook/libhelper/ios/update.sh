@@ -12,6 +12,7 @@ unzip $FILE -d $TMP
 cp -v -r $TMP/XCFrameworks/FBSDKCoreKit.xcframework/ios-arm64/FBSDKCoreKit.framework ../../lib/ios/
 cp -v -r $TMP/XCFrameworks/FBSDKLoginKit.xcframework/ios-arm64/FBSDKLoginKit.framework ../../lib/ios/
 cp -v -r $TMP/XCFrameworks/FBSDKShareKit.xcframework/ios-arm64/FBSDKShareKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKGamingServicesKit.xcframework/ios-arm64/FBSDKGamingServicesKit.framework ../../lib/ios/
 
 rm $FILE
 rm -rf $TMP
