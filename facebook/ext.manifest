@@ -9,7 +9,7 @@ platforms:
         context:
             frameworks: ['Security', 'Accelerate']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-            flags: ['-fcxx-modules', '-fmodules', '-std=c++11']
+            flags: ['-fcxx-modules', '-fmodules', '-std=c++11', '-fobjc-weak']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
@@ -17,7 +17,7 @@ platforms:
         context:
             frameworks: ['Security', 'Accelerate']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-            flags: ['-fcxx-modules', '-fmodules', '-std=c++11']
+            flags: ['-fcxx-modules', '-fmodules', '-std=c++11', '-fobjc-weak']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
@@ -25,7 +25,7 @@ platforms:
         context:
             frameworks: ['Security', 'Accelerate']
             weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-            flags: ['-fcxx-modules', '-fmodules', '-std=c++11']
+            flags: ['-fcxx-modules', '-fmodules', '-std=c++11', '-fobjc-weak']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
