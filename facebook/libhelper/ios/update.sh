@@ -13,6 +13,8 @@ cp -v -r $TMP/XCFrameworks/FBSDKCoreKit.xcframework/ios-arm64/FBSDKCoreKit.frame
 cp -v -r $TMP/XCFrameworks/FBSDKLoginKit.xcframework/ios-arm64/FBSDKLoginKit.framework ../../lib/ios/
 cp -v -r $TMP/XCFrameworks/FBSDKShareKit.xcframework/ios-arm64/FBSDKShareKit.framework ../../lib/ios/
 cp -v -r $TMP/XCFrameworks/FBSDKGamingServicesKit.xcframework/ios-arm64/FBSDKGamingServicesKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBAEMKit.xcframework/ios-arm64/FBAEMKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKCoreKit_Basics.xcframework/ios-arm64/FBSDKCoreKit_Basics.framework ../../lib/ios/
 
 rm $FILE
 rm -rf $TMP
