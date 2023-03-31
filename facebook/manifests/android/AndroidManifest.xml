@@ -9,6 +9,7 @@
 
     <application xmlns:tools="http://schemas.android.com/tools">
         <meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{{project.title}}" />
+        <meta-data android:name="com.facebook.sdk.ClientToken" android:value="{{facebook.clientToken}}"/>
         <activity android:name="com.defold.facebook.FacebookActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
