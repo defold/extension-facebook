@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-VERSION=v9.0.1
-FILE=FacebookSDK_Static.zip
+VERSION=v14.1.0
+FILE=FacebookSDK-Static_XCFramework.zip
 URL=https://github.com/facebook/facebook-ios-sdk/releases/download/$VERSION/$FILE
 TMP=tmpSdk
 
@@ -9,9 +9,12 @@ wget $URL
 
 unzip $FILE -d $TMP
 
-cp -v -r $TMP/FBSDKCoreKit.framework ../../lib/ios/
-cp -v -r $TMP/FBSDKLoginKit.framework ../../lib/ios/
-cp -v -r $TMP/FBSDKShareKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKCoreKit.xcframework/ios-arm64/FBSDKCoreKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKLoginKit.xcframework/ios-arm64/FBSDKLoginKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKShareKit.xcframework/ios-arm64/FBSDKShareKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKGamingServicesKit.xcframework/ios-arm64/FBSDKGamingServicesKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBAEMKit.xcframework/ios-arm64/FBAEMKit.framework ../../lib/ios/
+cp -v -r $TMP/XCFrameworks/FBSDKCoreKit_Basics.xcframework/ios-arm64/FBSDKCoreKit_Basics.framework ../../lib/ios/
 
 rm $FILE
 rm -rf $TMP

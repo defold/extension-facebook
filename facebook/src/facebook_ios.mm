@@ -9,6 +9,7 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 #import <FBSDKShareKit/FBSDKShareKit.h>
+@import FBSDKGamingServicesKit;
 #import <objc/runtime.h>
 
 #include "facebook_private.h"
@@ -72,12 +73,12 @@ static void PushJsonCommand(dmScript::LuaCallbackInfo* callback, const char* res
         }
         if(!g_Facebook.m_DisableFaceBookEvents)
         {
-            [FBSDKAppEvents activateApp];
+            [FBSDKAppEvents.shared activateApp];
         }
     }
 
     - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-        [FBSDKApplicationDelegate initializeSDK:launchOptions];
+        [[FBSDKApplicationDelegate sharedInstance] initializeSDK];
         if(!g_Facebook.m_Login)
         {
             return false;
@@ -505,35 +506,35 @@ int Platform_FacebookPostEvent(lua_State* L)
         params[objcKey] = objcValue;
     }
 
-    [FBSDKAppEvents logEvent:objcEvent valueToSum:valueToSum parameters:params];
+    [FBSDKAppEvents.shared logEvent:objcEvent valueToSum:valueToSum parameters:params];
 
     return 0;
 }
 
 int Platform_FacebookEnableEventUsage(lua_State* L)
 {
-    [FBSDKSettings setLimitEventAndDataUsage:false];
+    FBSDKSettings.sharedSettings.isEventDataUsageLimited = false;
 
     return 0;
 }
 
 int Platform_FacebookDisableEventUsage(lua_State* L)
 {
-    [FBSDKSettings setLimitEventAndDataUsage:true];
+    FBSDKSettings.sharedSettings.isEventDataUsageLimited = true;
 
     return 0;
 }
 
 int Platform_FacebookEnableAdvertiserTracking(lua_State* L)
 {
-    [FBSDKSettings setAdvertiserTrackingEnabled :true];
+    [FBSDKSettings.sharedSettings setAdvertiserTrackingEnabled :true];
 
     return 0;
 }
 
 int Platform_FacebookDisableAdvertiserTracking(lua_State* L)
 {
-    [FBSDKSettings setAdvertiserTrackingEnabled :false];
+    [FBSDKSettings.sharedSettings setAdvertiserTrackingEnabled :false];
 
     return 0;
 }
@@ -598,7 +599,7 @@ int Platform_FacebookShowDialog(lua_State* L)
 
 const char* Platform_GetVersion()
 {
-    const char* version = (const char*)[[FBSDKSettings sdkVersion] UTF8String];
+    const char* version = (const char*)[[FBSDKSettings.sharedSettings sdkVersion] UTF8String];
     return strdup(version);
 }
 

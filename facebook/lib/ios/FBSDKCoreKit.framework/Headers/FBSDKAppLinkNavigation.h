@@ -1,51 +1,38 @@
-// Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
-//
-// You are hereby granted a non-exclusive, worldwide, royalty-free license to use,
-// copy, modify, and distribute this software in source code or binary form for use
-// in connection with the web services and APIs provided by Facebook.
-//
-// As with any software that integrates with the Facebook platform, your use of
-// this software is subject to the Facebook Developer Principles and Policies
-// [http://developers.facebook.com/policy/]. This copyright notice shall be
-// included in all copies or substantial portions of the software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-#import "TargetConditionals.h"
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
 #if !TARGET_OS_TV
 
 #import <Foundation/Foundation.h>
 
-#import "FBSDKAppLink.h"
-#import "FBSDKAppLinkResolving.h"
+#import <FBSDKCoreKit/FBSDKAppLink.h>
+#import <FBSDKCoreKit/FBSDKAppLinkResolving.h>
+
+@protocol FBSDKSettings;
 
 NS_ASSUME_NONNULL_BEGIN
 
-/**
- The result of calling navigate on a FBSDKAppLinkNavigation
- */
+/// The result of calling navigate on a FBSDKAppLinkNavigation
 typedef NS_ENUM(NSInteger, FBSDKAppLinkNavigationType) {
-    /** Indicates that the navigation failed and no app was opened */
-    FBSDKAppLinkNavigationTypeFailure,
-    /** Indicates that the navigation succeeded by opening the URL in the browser */
-    FBSDKAppLinkNavigationTypeBrowser,
-    /** Indicates that the navigation succeeded by opening the URL in an app on the device */
-    FBSDKAppLinkNavigationTypeApp
+  /// Indicates that the navigation failed and no app was opened
+  FBSDKAppLinkNavigationTypeFailure,
+  /// Indicates that the navigation succeeded by opening the URL in the browser
+  FBSDKAppLinkNavigationTypeBrowser,
+  /// Indicates that the navigation succeeded by opening the URL in an app on the device
+  FBSDKAppLinkNavigationTypeApp,
 } NS_SWIFT_NAME(AppLinkNavigation.Type);
 
 /**
  Describes the callback for appLinkFromURLInBackground.
  @param navType the FBSDKAppLink representing the deferred App Link
  @param error the error during the request, if any
-
  */
-typedef void (^FBSDKAppLinkNavigationBlock)(FBSDKAppLinkNavigationType navType, NSError * _Nullable error)
+typedef void (^ FBSDKAppLinkNavigationBlock)(FBSDKAppLinkNavigationType navType, NSError *_Nullable error)
 NS_SWIFT_NAME(AppLinkNavigationBlock);
 
 /**
@@ -73,17 +60,17 @@ NS_SWIFT_NAME(default);
  data that should be passed along with the request, such as advertiser or affiliate IDs or
  other such metadata relevant on this device.
  */
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, id> *extras;
+@property (nonatomic, readonly, copy) NSDictionary<NSString *, id> *extras;
 
 /**
  The al_applink_data for the AppLinkNavigation. This will generally contain data common to
  navigation attempts such as back-links, user agents, and other information that may be used
  in routing and handling an App Link request.
  */
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, id> *appLinkData;
+@property (nonatomic, readonly, copy) NSDictionary<NSString *, id> *appLinkData;
 
-/** The AppLink to navigate to */
-@property (nonatomic, strong, readonly) FBSDKAppLink *appLink;
+/// The AppLink to navigate to
+@property (nonatomic, readonly, strong) FBSDKAppLink *appLink;
 
 /**
  Return navigation type for current instance.
@@ -91,35 +78,38 @@ NS_SWIFT_NAME(default);
  */
 @property (nonatomic, readonly) FBSDKAppLinkNavigationType navigationType;
 
-/** Creates an AppLinkNavigation with the given link, extras, and App Link data */
+// UNCRUSTIFY_FORMAT_OFF
+/// Creates an AppLinkNavigation with the given link, extras, and App Link data
 + (instancetype)navigationWithAppLink:(FBSDKAppLink *)appLink
                                extras:(NSDictionary<NSString *, id> *)extras
                           appLinkData:(NSDictionary<NSString *, id> *)appLinkData
-NS_SWIFT_NAME(init(appLink:extras:appLinkData:));
+                             settings:(id<FBSDKSettings>)settings
+NS_SWIFT_NAME(init(appLink:extras:appLinkData:settings:));
 
 /**
- Creates an NSDictionary with the correct format for iOS callback URLs,
+ Creates an NSDictionary<NSString *, id> with the correct format for iOS callback URLs,
  to be used as 'appLinkData' argument in the call to navigationWithAppLink:extras:appLinkData:
  */
 + (NSDictionary<NSString *, NSDictionary<NSString *, NSString *> *> *)callbackAppLinkDataForAppWithName:(NSString *)appName
                                                                                                     url:(NSString *)url
 NS_SWIFT_NAME(callbackAppLinkData(forApp:url:));
+// UNCRUSTIFY_FORMAT_ON
 
-/** Performs the navigation */
+/// Performs the navigation
 - (FBSDKAppLinkNavigationType)navigate:(NSError **)error
-__attribute__((swift_error(nonnull_error)));
+  __attribute__((swift_error(nonnull_error)));
 
-/** Returns a FBSDKAppLink for the given URL */
+/// Returns a FBSDKAppLink for the given URL
 + (void)resolveAppLink:(NSURL *)destination handler:(FBSDKAppLinkBlock)handler;
 
-/** Returns a FBSDKAppLink for the given URL using the given App Link resolution strategy */
+/// Returns a FBSDKAppLink for the given URL using the given App Link resolution strategy
 + (void)resolveAppLink:(NSURL *)destination
               resolver:(id<FBSDKAppLinkResolving>)resolver
                handler:(FBSDKAppLinkBlock)handler;
 
-/** Navigates to a FBSDKAppLink and returns whether it opened in-app or in-browser */
+/// Navigates to a FBSDKAppLink and returns whether it opened in-app or in-browser
 + (FBSDKAppLinkNavigationType)navigateToAppLink:(FBSDKAppLink *)link error:(NSError **)error
-__attribute__((swift_error(nonnull_error)));
+  __attribute__((swift_error(nonnull_error)));
 
 /**
  Returns a FBSDKAppLinkNavigationType based on a FBSDKAppLink.
@@ -129,7 +119,7 @@ __attribute__((swift_error(nonnull_error)));
  */
 + (FBSDKAppLinkNavigationType)navigationTypeForLink:(FBSDKAppLink *)link;
 
-/** Navigates to a URL (an asynchronous action) and returns a FBSDKNavigationType */
+/// Navigates to a URL (an asynchronous action) and returns a FBSDKNavigationType
 + (void)navigateToURL:(NSURL *)destination handler:(FBSDKAppLinkNavigationBlock)handler;
 
 /**
