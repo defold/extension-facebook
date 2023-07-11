@@ -1,8 +1,12 @@
+repositories {
+  mavenCentral()
+}
+
 dependencies {
   // https://developers.facebook.com/docs/android/getting-started/
-  compile 'com.facebook.android:facebook-core:14.1.1'
-  compile 'com.facebook.android:facebook-login:14.1.1'
-  compile 'com.facebook.android:facebook-share:14.1.1'
-  compile 'com.facebook.android:facebook-messenger:14.1.1'
-  compile 'com.facebook.android:facebook-applinks:14.1.1'
+  implementation 'com.facebook.android:facebook-core:14.1.1'
+  implementation 'com.facebook.android:facebook-login:14.1.1'
+  implementation 'com.facebook.android:facebook-share:14.1.1'
+  implementation 'com.facebook.android:facebook-messenger:14.1.1'
+  implementation 'com.facebook.android:facebook-applinks:14.1.1'
 }
