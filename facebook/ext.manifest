@@ -5,27 +5,15 @@ platforms:
         context:
             aaptExtraPackages: ['com.facebook', 'com.facebook.common', 'com.facebook.login', 'com.facebook.share']
 
-    armv7-ios:
-        context:
-            frameworks: ['Security', 'Accelerate']
-            weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-            flags: ['-fcxx-modules', '-fmodules', '-std=c++11', '-fobjc-weak']
-            linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
-            libs:       ['swiftCompatibility51', 'swiftCompatibility50']
-
     arm64-ios:
         context:
-            frameworks: ['Security', 'Accelerate']
-            weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-            flags: ['-fcxx-modules', '-fmodules', '-std=c++11', '-fobjc-weak']
+            flags: ['-fcxx-modules', '-fmodules', '-fobjc-weak']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
     x86_64-ios:
         context:
-            frameworks: ['Security', 'Accelerate']
-            weakFrameworks: ['Accounts', 'Social', 'AdSupport']
-            flags: ['-fcxx-modules', '-fmodules', '-std=c++11', '-fobjc-weak']
+            flags: ['-fcxx-modules', '-fmodules', '-fobjc-weak']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
