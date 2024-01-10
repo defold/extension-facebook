@@ -7,13 +7,13 @@ platforms:
 
     arm64-ios:
         context:
-            flags: ['-fcxx-modules', '-fmodules', '-fobjc-weak']
+            flags: ['-fcxx-modules', '-fmodules', '-fobjc-weak', '-Wno-module-import-in-extern-c']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
     x86_64-ios:
         context:
-            flags: ['-fcxx-modules', '-fmodules', '-fobjc-weak']
+            flags: ['-fcxx-modules', '-fmodules', '-fobjc-weak', '-Wno-module-import-in-extern-c']
             linkFlags:  ['-ObjC', '-Wl,-rpath,/usr/lib/swift', '-Wl,-rpath,@executable_path/Frameworks']
             libs:       ['swiftCompatibility51', 'swiftCompatibility50']
 
