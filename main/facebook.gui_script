@@ -17,9 +17,6 @@ function init(self)
 	gui.set_render_order(15)
 	self.root = gui.get_node("root")
 	msg.post("#", "acquire_input_focus")
-
-	update_version(self)
-	update_access_token(self)
 end
 
 function on_message(self, message_id, message, sender)
@@ -124,6 +121,7 @@ function on_input(self, action_id, action)
 		print("init")
 		facebook.init()
 		update_version(self)
+		update_access_token(self)
 	end)
 
 	dirtylarry:button("gamereq_nonappusers", action_id, action, function ()
