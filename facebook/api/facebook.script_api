@@ -185,7 +185,7 @@
 
   - name: get_current_profile
     type: function
-    desc: iOS ONLY. Get the current [FBSDKProfile.currentProfile](https://developers.facebook.com/docs/facebook-login/limited-login/ios/).
+    desc: iOS ONLY. Get the users [FBSDKProfile.currentProfile](https://developers.facebook.com/docs/facebook-login/limited-login/ios/).
           [Reading From Profile Helper Class](https://developers.facebook.com/docs/facebook-login/limited-login/permissions/profile-helper)
 
     returns:
