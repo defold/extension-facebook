@@ -164,20 +164,7 @@ static int Facebook_LoginWithTrackingPreference(lua_State* L)
 
     int login_tracking = luaL_checkinteger(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
-    int type = lua_type(L, 3);
-    const char* crypto_nonce = 0x0;
-    if (type == LUA_TSTRING)
-    {
-        crypto_nonce = lua_tostring(L, 3);
-    }
-    else if (type == LUA_TNIL)
-    {
-        // do nothing, it's fine
-    }
-    else
-    {
-        return luaL_error(L, "`crypto_nonce` should be string or `nil`");
-    }
+    const char* crypto_nonce = luaL_checkstring(L, 3);
     dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 4);
 
     char* permissions[128];

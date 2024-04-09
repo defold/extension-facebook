@@ -627,12 +627,6 @@ int Platform_FacebookInit(lua_State* L)
     return 0;
 }
 
-
-void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
-{
-    (void)params; (void)event;
-}
-
 void Platform_FacebookSetDefaultAudience(int audience)
 {
     [g_Facebook.m_Login setDefaultAudience: convertDefaultAudience(audience)];
