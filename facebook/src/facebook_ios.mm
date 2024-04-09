@@ -314,6 +314,17 @@ static FBSDKGameRequestActionType convertGameRequestAction(int fromLuaInt) {
     }
 }
 
+static FBSDKLoginTracking convertLoginTracking(int fromLuaInt) {
+    switch (fromLuaInt) {
+        case dmFacebook::LOGIN_TRACKING_LIMITED:
+            return FBSDKLoginTrackingLimited;
+        case dmFacebook::LOGIN_TRACKING_ENABLED:
+            return FBSDKLoginTrackingEnabled;
+        default:
+            return FBSDKLoginTrackingLimited;
+    }
+}
+
 static FBSDKGameRequestFilter convertGameRequestFilters(int fromLuaInt) {
     switch (fromLuaInt) {
         case 3:
@@ -614,6 +625,168 @@ int Platform_FacebookInit(lua_State* L)
     DM_LUA_STACK_CHECK(L, 0);
     g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
     return 0;
+}
+
+
+void Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event)
+{
+    (void)params; (void)event;
+}
+
+void Platform_FacebookSetDefaultAudience(int audience)
+{
+    [g_Facebook.m_Login setDefaultAudience: convertDefaultAudience(audience)];
+}
+
+void Platform_FacebookLoginWithTrackingPreference(dmFacebook::LoginTracking login_tracking, const char** permissions, uint32_t permission_count, const char* crypto_nonce, dmScript::LuaCallbackInfo* callback)
+{
+    // This function must always return so memory for `permissions` can be free'd.
+    g_Facebook.m_Delegate.m_Callback = callback;
+
+    if (login_tracking == dmFacebook::LOGIN_TRACKING_ENABLED) {
+        // Check if there already is a access token, and if it has expired.
+        // In such case we want to reautorize instead of doing a new login.
+        if ([FBSDKAccessToken currentAccessToken]) {
+            if ([FBSDKAccessToken currentAccessToken].dataAccessExpired) {
+                [g_Facebook.m_Login reauthorizeDataAccess:nil handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+                    LoginCallback(callback, result, error);
+                }];
+                return;
+            }
+        }
+    }
+    NSMutableArray* ns_permissions = [[NSMutableArray alloc] init];
+    for (uint32_t i = 0; i < permission_count; ++i)
+    {
+        const char* permission = permissions[i];
+        [ns_permissions addObject: [NSString stringWithUTF8String: permission]];
+    }
+    FBSDKLoginConfiguration *configuration =
+            [[FBSDKLoginConfiguration alloc] initWithPermissions:ns_permissions
+                                             tracking:convertLoginTracking(login_tracking)
+                                             nonce:[NSString stringWithUTF8String:crypto_nonce]];
+
+    @try
+    {
+        [g_Facebook.m_Login logInFromViewController:nil configuration:configuration completion:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+            LoginCallback(callback, result, error);
+        }];
+    } @catch (NSException* exception)
+    {
+        NSString* errorMessage = [NSString stringWithFormat:@"Unable to request permissions: %@", exception.reason];
+        dmFacebook::RunStatusCallback(callback, [errorMessage UTF8String], dmFacebook::STATE_CLOSED_LOGIN_FAILED);
+    }
+}
+
+const char* Platform_FacebookGetCurrentAuthenticationToken()
+{
+    if (!FBSDKAuthenticationToken.currentAuthenticationToken)
+    {
+        return 0x0;
+    }
+    return [FBSDKAuthenticationToken.currentAuthenticationToken.tokenString UTF8String];
+}
+
+int Platform_FacebookGetCurrentProfile(lua_State* L)
+{
+    FBSDKProfile *profile = [FBSDKProfile currentProfile];
+    
+    if (profile) {
+    #define PUSH_STR(L, field) \
+        if (profile.field) { \
+            lua_pushstring(L, [profile.field UTF8String]); \
+            lua_setfield(L, -2, #field); \
+        } \
+
+    #define PUSH_URL(L, field) \
+        if (profile.field) { \
+            lua_pushstring(L, [profile.field.absoluteString UTF8String]); \
+            lua_setfield(L, -2, #field); \
+        } \
+
+    #define PUSH_TIMESTAMP(L, field) \
+        if (profile.field) { \
+            lua_pushnumber(L, [profile.field timeIntervalSince1970]); \
+            lua_setfield(L, -2, #field); \
+        } \
+
+    #define PUSH_LOCATION(L, field) \
+        if (profile.field) { \
+            FBSDKLocation *location_field = profile.field; \
+            lua_newtable(L); \
+            lua_pushstring(L, [location_field.id UTF8String]); \
+            lua_setfield(L, -2, "id"); \
+            lua_pushstring(L, [location_field.name UTF8String]); \
+            lua_setfield(L, -2, "name"); \
+            lua_setfield(L, -2, #field); \
+        } \
+           
+        lua_newtable(L);
+        
+        PUSH_STR(L, userID);
+        PUSH_STR(L, firstName);
+        PUSH_STR(L, middleName);
+        PUSH_STR(L, lastName);
+        PUSH_STR(L, name);
+        PUSH_STR(L, email);
+        PUSH_STR(L, gender);
+
+        PUSH_URL(L, linkURL);
+        PUSH_URL(L, imageURL);
+        
+        PUSH_TIMESTAMP(L, refreshDate);
+        PUSH_TIMESTAMP(L, birthday);
+
+        PUSH_LOCATION(L, location);
+        PUSH_LOCATION(L, hometown);
+
+    #undef PUSH_URL
+    #undef PUSH_STR
+    #undef PUSH_TIMESTAMP
+    #undef PUSH_LOCATION
+
+        FBSDKUserAgeRange *ageRange = profile.ageRange;
+        if (ageRange) {
+            lua_newtable(L);
+            lua_pushnumber(L, [ageRange.min doubleValue]);
+            lua_setfield(L, -2, "min");
+            lua_pushnumber(L, [ageRange.max doubleValue]);
+            lua_setfield(L, -2, "max");
+            lua_setfield(L, -2, "ageRange");
+        }
+
+        NSSet<NSString *> *permissions = profile.permissions;
+        if (permissions && permissions.count > 0) {
+            lua_newtable(L);
+
+            int index = 1;
+            for (NSString *permission in permissions) {
+                lua_pushstring(L, [permission UTF8String]);
+                lua_rawseti(L, -2, index);
+                index++;
+            }
+
+            lua_setfield(L, -2, "permissions");
+        }
+
+        NSArray<FBSDKUserIdentifier> *friendIDs = profile.friendIDs;
+        if (friendIDs && friendIDs.count > 0) {
+            lua_newtable(L);
+
+            int index = 1;
+            for (FBSDKUserIdentifier friendID in friendIDs) {
+                lua_pushstring(L, [friendID UTF8String]);
+                lua_rawseti(L, -2, index);
+                index++;
+            }
+
+            lua_setfield(L, -2, "friendIDs");
+        }
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1; // Number of return values pushed onto the stack
 }
 
 dmExtension::Result Platform_AppInitializeFacebook(dmExtension::AppParams* params, const char* app_id)

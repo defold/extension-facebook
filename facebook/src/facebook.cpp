@@ -142,6 +142,97 @@ static int Facebook_DisableAdvertiserTracking(lua_State* L)
 #endif
 }
 
+static int Facebook_SetDefaultAudience(lua_State* L)
+{
+#if defined(DM_PLATFORM_IOS) 
+    CHECK_FACEBOOK_INIT(L);
+    DM_LUA_STACK_CHECK(L, 0);
+    int audience = luaL_checkinteger(L, 1);
+    Platform_FacebookSetDefaultAudience(audience);
+    return 0;
+#else
+    dmLogWarning("`set_default_audience` is iOS only function.");
+    return 0;
+#endif
+}
+
+static int Facebook_LoginWithTrackingPreference(lua_State* L)
+{
+#if defined(DM_PLATFORM_IOS) 
+    CHECK_FACEBOOK_INIT(L);
+    DM_LUA_STACK_CHECK(L, 0);
+
+    int login_tracking = luaL_checkinteger(L, 1);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    int type = lua_type(L, 3);
+    const char* crypto_nonce = 0x0;
+    if (type == LUA_TSTRING)
+    {
+        crypto_nonce = lua_tostring(L, 3);
+    }
+    else if (type == LUA_TNIL)
+    {
+        // do nothing, it's fine
+    }
+    else
+    {
+        return luaL_error(L, "`crypto_nonce` should be string or `nil`");
+    }
+    dmScript::LuaCallbackInfo* callback = dmScript::CreateCallback(L, 4);
+
+    char* permissions[128];
+    int permission_count = luaTableToCArray(L, 2, permissions, sizeof(permissions) / sizeof(permissions[0]));
+    if (permission_count == -1)
+    {
+        return luaL_error(L, "Facebook permissions must be strings");
+    }
+
+    Platform_FacebookLoginWithTrackingPreference((dmFacebook::LoginTracking)login_tracking, (const char**) permissions, permission_count, crypto_nonce, callback);
+
+    for (int i = 0; i < permission_count; ++i)
+    {
+        free(permissions[i]);
+    }
+    return 0;
+#else
+    dmLogWarning("`login_with_tracking_preference` is iOS only function.");
+    return 0;
+#endif
+}
+
+static int Facebook_GetCurrentAuthenticationToken(lua_State* L)
+{
+#if defined(DM_PLATFORM_IOS) 
+    CHECK_FACEBOOK_INIT(L);
+    DM_LUA_STACK_CHECK(L, 1);
+    const char* token = Platform_FacebookGetCurrentAuthenticationToken();
+    if (token == 0x0)
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushstring(L, token);
+    }
+    return 1;
+#else
+    dmLogWarning("`get_current_authentication_token` is iOS only function.");
+    return 0;
+#endif
+}
+
+static int Facebook_GetCurrentProfile(lua_State* L)
+{
+#if defined(DM_PLATFORM_IOS) 
+    CHECK_FACEBOOK_INIT(L);
+    DM_LUA_STACK_CHECK(L, 1);
+    return Platform_FacebookGetCurrentProfile(L);
+#else
+    dmLogWarning("`get_current_profile` is iOS only function.");
+    return 0;
+#endif
+}
+
 static const luaL_reg Facebook_methods[] =
 {
     {"init", Facebook_Init},
@@ -157,6 +248,11 @@ static const luaL_reg Facebook_methods[] =
     {"deferred_deep_link", Facebook_FetchDeferredAppLinkData},
     {"enable_advertiser_tracking", Facebook_EnableAdvertiserTracking},
     {"disable_advertiser_tracking", Facebook_DisableAdvertiserTracking},
+    // iOS only function. FB SDK 17.0:
+    {"set_default_audience", Facebook_SetDefaultAudience},
+    {"login_with_tracking_preference", Facebook_LoginWithTrackingPreference},
+    {"get_current_authentication_token", Facebook_GetCurrentAuthenticationToken},
+    {"get_current_profile", Facebook_GetCurrentProfile},
     {0, 0}
 };
 
@@ -190,6 +286,9 @@ static void LuaInit(lua_State* L)
     SETCONSTANT(AUDIENCE_ONLYME,   dmFacebook::AUDIENCE_ONLYME);
     SETCONSTANT(AUDIENCE_FRIENDS,  dmFacebook::AUDIENCE_FRIENDS);
     SETCONSTANT(AUDIENCE_EVERYONE, dmFacebook::AUDIENCE_EVERYONE);
+
+    SETCONSTANT(LOGIN_TRACKING_LIMITED,  dmFacebook::LOGIN_TRACKING_LIMITED);
+    SETCONSTANT(LOGIN_TRACKING_ENABLED, dmFacebook::LOGIN_TRACKING_ENABLED);
 
 #undef SETCONSTANT
 
