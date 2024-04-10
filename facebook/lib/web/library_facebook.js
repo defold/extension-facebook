@@ -68,7 +68,7 @@ var LibraryFacebook = {
                         }
                     }
 
-                    var buf = allocate(intArrayFromString(access_token), ALLOC_STACK);
+                    var buf = stringToUTF8OnStack(access_token);
                     {{{ makeDynCall('vii', 'callback') }}}(lua_state, buf);
                 } else {
                     {{{ makeDynCall('vii', 'callback') }}}(lua_state, 0);
@@ -90,10 +90,10 @@ var LibraryFacebook = {
                     var e = (response && response.error ? response.error.message : 0);
                     if(e == 0) {
                         var res_data = JSON.stringify(response);
-                        var res_buf = allocate(intArrayFromString(res_data), ALLOC_STACK);
+                        var res_buf = stringToUTF8OnStack(res_data);
                         {{{ makeDynCall('viii', 'callback') }}}(lua_state, res_buf, e);
                     } else {
-                        var error = allocate(intArrayFromString(e), ALLOC_STACK);
+                        var error = stringToUTF8OnStack(e);
                         {{{ makeDynCall('viii', 'callback') }}}(lua_state, 0, error);
                     }
                 });
@@ -160,19 +160,19 @@ var LibraryFacebook = {
 
                         window._dmFacebookUpdatePermissions(function (_error, _permissions) {
                             if (_error == 0) {
-                                var permissionsbuf = allocate(intArrayFromString(_permissions), ALLOC_STACK);
+                                var permissionsbuf = stringToUTF8OnStack(_permissions);
                                 {{{ makeDynCall('viiii', 'callback') }}}(thread, state_open, 0, permissionsbuf);
                             } else {
-                                var errbuf = allocate(intArrayFromString(_error), ALLOC_STACK);
+                                var errbuf = stringToUTF8OnStack(_error);
                                 {{{ makeDynCall('viiii', 'callback') }}}(thread, state_failed, errbuf, 0);
                             }
                         });
                     } else if (error != 0) {
-                        var errbuf = allocate(intArrayFromString(error), ALLOC_STACK);
+                        var errbuf = stringToUTF8OnStack(error);
                         {{{ makeDynCall('viiii', 'callback') }}}(thread, state_closed, errbuf, 0);
                     } else {
                         var errmsg = "Login was cancelled";
-                        var errbuf = allocate(intArrayFromString(errmsg), ALLOC_STACK);
+                        var errbuf = stringToUTF8OnStack(errmsg);
                         {{{ makeDynCall('viiii', 'callback') }}}(thread, state_failed, errbuf, 0);
                     }
                 }, opts);
@@ -183,4 +183,4 @@ var LibraryFacebook = {
 }
 
 autoAddDeps(LibraryFacebook, '$FBinner');
-mergeInto(LibraryManager.library, LibraryFacebook);
+addToLibrary(LibraryFacebook);
