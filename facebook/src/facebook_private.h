@@ -50,6 +50,11 @@ namespace dmFacebook {
         COMMAND_TYPE_DEFERRED_APP_LINK      = 6
     };
 
+    enum LoginTracking {
+        LOGIN_TRACKING_LIMITED              = 1,
+        LOGIN_TRACKING_ENABLED              = 2
+    };
+
     struct FacebookCommand
     {
         FacebookCommand()
@@ -155,3 +160,8 @@ dmExtension::Result Platform_InitializeFacebook(dmExtension::Params* params);
 dmExtension::Result Platform_FinalizeFacebook(dmExtension::Params* params);
 dmExtension::Result Platform_UpdateFacebook(dmExtension::Params* params);
 void                Platform_OnEventFacebook(dmExtension::Params* params, const dmExtension::Event* event);
+
+void        Platform_FacebookSetDefaultAudience(int audience);
+void        Platform_FacebookLoginWithTrackingPreference(dmFacebook::LoginTracking login_tracking, const char** permissions, uint32_t permission_count, const char* crypto_nonce, dmScript::LuaCallbackInfo* callback);
+const char* Platform_FacebookGetCurrentAuthenticationToken();
+int         Platform_FacebookGetCurrentProfile(lua_State* L);
