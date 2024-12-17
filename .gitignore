@@ -6,3 +6,4 @@ Thumbs.db
 .gradle
 facebook/libhelper/android/build/**
 *.der
+/.editor_settings
