@@ -253,6 +253,3 @@ You can opt to share generated events with Facebook for improved ad-tracking. Th
 
 The source code is available on [GitHub](https://github.com/defold/extension-facebook)
 
-
-
-## API reference
