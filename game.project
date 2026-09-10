@@ -27,5 +27,3 @@ appid = 1609643756005877
 autoinit = 0
 clienttoken = ffb21570434787084bbdd8d6042bc9a1
 
-[native_extension]
-app_manifest = /generated.appmanifest
