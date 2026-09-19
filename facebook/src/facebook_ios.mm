@@ -37,54 +37,72 @@ Facebook g_Facebook;
 static const char* ObjCToJson(id obj);
 static void PushJsonCommand(dmScript::LuaCallbackInfo* callback, const char* result, const char* error);
 
-// AppDelegate used temporarily to hijack all AppDelegate messages
-// An improvment could be to create generic proxy
-@interface FacebookAppDelegate : NSObject <UIApplicationDelegate, FBSDKSharingDelegate, FBSDKGameRequestDialogDelegate>
+// Process launch initializes FBSDK; scene callbacks handle activation and links.
+@interface FacebookAppDelegate : NSObject <UIApplicationDelegate, UISceneDelegate, FBSDKSharingDelegate, FBSDKGameRequestDialogDelegate>
+{
+    NSMutableArray* m_PendingURLContexts;
+    BOOL m_SceneActive;
+}
 @property dmScript::LuaCallbackInfo* m_Callback;
-
-- (BOOL)application:(UIApplication *)application
-                   openURL:(NSURL *)url
-                   sourceApplication:(NSString *)sourceApplication
-                   annotation:(id)annotation;
-
-- (BOOL)application:(UIApplication *)application
-                   didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
+- (void)handlePendingURLs;
+- (void)activateApp;
 @end
 
 @implementation FacebookAppDelegate
-    - (BOOL)application:(UIApplication *)application
-                       openURL:(NSURL *)url
-                       sourceApplication:(NSString *)sourceApplication
-                       annotation:(id)annotation {
-        if(!g_Facebook.m_Login)
-        {
-            return false;
-        }
-        return [[FBSDKApplicationDelegate sharedInstance] application:application
-                                                              openURL:url
-                                                    sourceApplication:sourceApplication
-                                                           annotation:annotation];
+    - (void)scene:(UIScene*)scene openURLContexts:(NSSet<UIOpenURLContext*>*)contexts {
+        if (!m_PendingURLContexts)
+            m_PendingURLContexts = [[NSMutableArray alloc] init];
+        [m_PendingURLContexts addObjectsFromArray:contexts.allObjects];
+        [self handlePendingURLs];
     }
 
-    - (void)applicationDidBecomeActive:(UIApplication *)application {
-        if(!g_Facebook.m_Login)
-        {
+    - (void)handlePendingURLs {
+        if (!g_Facebook.m_Login)
             return;
+
+        // Initial scene connection precedes facebook.init(). Retain the complete
+        // contexts until the login manager is ready, then consume them once.
+        NSArray* contexts = [m_PendingURLContexts copy];
+        [m_PendingURLContexts removeAllObjects];
+        for (UIOpenURLContext* context in contexts) {
+            [[FBSDKApplicationDelegate sharedInstance] application:[UIApplication sharedApplication]
+                                                          openURL:context.URL
+                                                sourceApplication:context.options.sourceApplication
+                                                       annotation:context.options.annotation];
         }
-        if(!g_Facebook.m_DisableFaceBookEvents)
-        {
-            [FBSDKAppEvents.shared activateApp];
-        }
+        [contexts release];
     }
 
-    - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-        [[FBSDKApplicationDelegate sharedInstance] initializeSDK];
-        if(!g_Facebook.m_Login)
-        {
-            return false;
-        }
+    - (void)scene:(UIScene*)scene willConnectToSession:(UISceneSession*)session options:(UISceneConnectionOptions*)options {
+        [self scene:scene openURLContexts:options.URLContexts];
+    }
+
+    - (void)activateApp {
+        if (m_SceneActive && g_Facebook.m_Login && !g_Facebook.m_DisableFaceBookEvents)
+            [FBSDKAppEvents.shared activateApp];
+    }
+
+    - (void)sceneDidBecomeActive:(UIScene*)scene {
+        m_SceneActive = YES;
+        [self activateApp];
+    }
+
+    - (void)sceneWillResignActive:(UIScene*)scene {
+        m_SceneActive = NO;
+    }
+
+    - (void)sceneDidDisconnect:(UIScene*)scene {
+        m_SceneActive = NO;
+    }
+
+    - (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions {
         return [[FBSDKApplicationDelegate sharedInstance] application:application
                                         didFinishLaunchingWithOptions:launchOptions];
+    }
+
+    - (void)dealloc {
+        [m_PendingURLContexts release];
+        [super dealloc];
     }
 
     // Sharing related methods
@@ -184,9 +202,11 @@ struct FacebookAppDelegateRegister
     FacebookAppDelegateRegister() {
         g_Facebook.m_Delegate = [[FacebookAppDelegate alloc] init];
         dmExtension::RegisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
+        dmExtension::RegisteriOSUISceneDelegate(g_Facebook.m_Delegate);
     }
 
     ~FacebookAppDelegateRegister() {
+        dmExtension::UnregisteriOSUISceneDelegate(g_Facebook.m_Delegate);
         dmExtension::UnregisteriOSUIApplicationDelegate(g_Facebook.m_Delegate);
         [g_Facebook.m_Delegate release];
     }
@@ -624,6 +644,8 @@ int Platform_FacebookInit(lua_State* L)
 {
     DM_LUA_STACK_CHECK(L, 0);
     g_Facebook.m_Login = [[FBSDKLoginManager alloc] init];
+    [g_Facebook.m_Delegate handlePendingURLs];
+    [g_Facebook.m_Delegate activateApp];
     return 0;
 }
 
