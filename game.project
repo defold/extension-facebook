@@ -20,6 +20,7 @@ bundle_identifier = com.defold.facebook
 package = com.defold.facebook
 
 [library]
+defold_min_version = 1.14.0
 include_dirs = facebook
 
 [facebook]
