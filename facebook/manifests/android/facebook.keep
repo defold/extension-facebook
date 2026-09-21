@@ -1,2 +1,7 @@
 # Native Facebook code loads the extension's Java classes and methods by name through JNI.
 -keep,allowoptimization class com.defold.facebook.** { *; }
+
+# Android reads CREATOR by reflection when Facebook login and share objects cross activities.
+-keepclassmembers class com.facebook.** implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator CREATOR;
+}
