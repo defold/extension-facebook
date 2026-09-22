@@ -4,9 +4,9 @@ repositories {
 
 dependencies {
   // https://developers.facebook.com/docs/android/getting-started/
-  implementation 'com.facebook.android:facebook-core:17.0.0'
-  implementation 'com.facebook.android:facebook-login:17.0.0'
-  implementation 'com.facebook.android:facebook-share:17.0.0'
-  implementation 'com.facebook.android:facebook-messenger:17.0.0'
-  implementation 'com.facebook.android:facebook-applinks:17.0.0'
+  implementation 'com.facebook.android:facebook-core:18.3.0'
+  implementation 'com.facebook.android:facebook-login:18.3.0'
+  implementation 'com.facebook.android:facebook-share:18.3.0'
+  implementation 'com.facebook.android:facebook-messenger:18.3.0'
+  implementation 'com.facebook.android:facebook-applinks:18.3.0'
 }
