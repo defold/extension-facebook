@@ -1,0 +1,11 @@
+{
+  "platform": "ios",
+  "minVersion": "12.0",
+  "packages": [
+    {
+      "url": "https://github.com/facebook/facebook-ios-sdk.git",
+      "version": "18.1.1",
+      "products": ["FacebookCore", "FacebookLogin", "FacebookShare", "FacebookGamingServices"]
+    }
+  ]
+}
